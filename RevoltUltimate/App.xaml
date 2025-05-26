@@ -4,6 +4,7 @@
              xmlns:local="clr-namespace:RevoltUltimate"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <BitmapImage x:Key="RoninLogoImage" UriSource="images/RoninLogo.png"/>
     </Application.Resources>
+
 </Application>

@@ -1,12 +1,167 @@
 ﻿<Window x:Class="RevoltUltimate.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:RevoltUltimate"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
-
-    </Grid>
-</Window>
+           xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+           xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
+           xmlns:converters="clr-namespace:RevoltUltimate.Converters"
+           Title="Revolt Ultimate" Height="450" Width="800"
+           WindowStyle="None" 
+           ResizeMode="CanMinimize"
+           AllowsTransparency="True"
+           Background="Black">
+    <Window.Resources>
+        <converters:ProgressToWidthConverter x:Key="ProgressToWidthConverter"/>
+        <Style x:Key="TitleBarButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Black"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="#2196F3"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="HamburgerLineStyle" TargetType="Rectangle">
+            <Setter Property="Fill" Value="White"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=Button}}" Value="True">
+                    <Setter Property="Fill" Value="#2196F3"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="CloseButtonStyle" TargetType="Button" BasedOn="{StaticResource TitleBarButtonStyle}">
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="#FF1744"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+    <DockPanel>
+           <Border Background="Black" Height="40" DockPanel.Dock="Top" MouseDown="TitleBar_MouseDown">
+               <Grid>
+                   <Grid.ColumnDefinitions>
+                       <ColumnDefinition Width="*" />
+                       <ColumnDefinition Width="2*" />
+                       <ColumnDefinition Width="*" />
+                   </Grid.ColumnDefinitions>
+                   <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Margin="10,0,0,0">
+                       <Image Source="images/RoninLogo.png" Height="28" VerticalAlignment="Center"/>
+                   </StackPanel>
+                   <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Column="1">
+                       <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Column="1">
+                           <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                               <Grid Width="36" Height="36" Margin="0,0,8,0">
+                                   <Ellipse Fill="#2196F3" Stroke="White" StrokeThickness="2"/>
+                                   <TextBlock x:Name="LevelTextBlock"
+                                              Foreground="White"
+                                              FontWeight="Bold"
+                                              FontSize="18"
+                                              VerticalAlignment="Center"
+                                              HorizontalAlignment="Center"/>
+                               </Grid>
+                               <Grid x:Name="XpBarGrid" Width="260" Height="22" HorizontalAlignment="Center"
+                                     ToolTip="">
+                                <Border
+                                       Background="Transparent"
+                                       BorderBrush="White"
+                                       BorderThickness="2"
+                                       CornerRadius="11"
+                                   />
+                                <Border
+                                    Background="#428bca"
+                                    CornerRadius="11"
+                                    HorizontalAlignment="Left"
+                                    Margin="2,2,2,2">
+                                    <Border.Width>
+                                        <MultiBinding Converter="{StaticResource ProgressToWidthConverter}">
+                                            <Binding ElementName="XpProgressBar" Path="Value"/>
+                                            <Binding ElementName="XpProgressBar" Path="Maximum"/>
+                                            <Binding Path="ActualWidth" RelativeSource="{RelativeSource AncestorType=Grid}"/>
+                                        </MultiBinding>
+                                    </Border.Width>
+                                </Border>
+                                <ProgressBar x:Name="XpProgressBar" Value="50" Maximum="100" Visibility="Collapsed"/>
+                               </Grid>
+                           </StackPanel>
+                       </StackPanel>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Top"
+                               Grid.Column="2"
+                               Margin="0,0,2,0">
+                    <Grid Width="40" Height="40" Margin="0,0,8,0" VerticalAlignment="Center">
+                       <Ellipse
+                           Stroke="White"
+                           StrokeThickness="2"
+                           Fill="Black"/>
+                       <Ellipse
+                           Margin="3">
+                           <Ellipse.Fill>
+                               <ImageBrush ImageSource="images/ProfilePic.png" Stretch="Uniform"/>
+                           </Ellipse.Fill>
+                       </Ellipse>
+                    </Grid>
+                    <Button Width="24" Height="24"
+                            Style="{StaticResource TitleBarButtonStyle}"
+                            Padding="0"
+                            ToolTip="Settings"
+                            Click="Menu_Settings_Click">
+                        <TextBlock FontFamily="Segoe MDL2 Assets"
+                                   FontSize="16"
+                                   Text="&#xE713;"
+                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"/>
+                    </Button>
+                    <Button Width="24" Height="24"
+                            Style="{StaticResource TitleBarButtonStyle}"
+                            Padding="0"
+                            ToolTip="Menu"
+                            Click="HamburgerMenu_Click">
+                        <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="4,2,4,2">
+                            <Rectangle Height="3" Width="16" Style="{StaticResource HamburgerLineStyle}" Margin="0,1"/>
+                            <Rectangle Height="3" Width="16" Style="{StaticResource HamburgerLineStyle}" Margin="0,1"/>
+                            <Rectangle Height="3" Width="16" Style="{StaticResource HamburgerLineStyle}" Margin="0,1"/>
+                        </StackPanel>
+                        <Button.ContextMenu>
+                            <ContextMenu x:Name="HamburgerMenu">
+                                <MenuItem Header="Settings" Click="Menu_Settings_Click"/>
+                                <MenuItem Header="About" Click="Menu_About_Click"/>
+                                <Separator/>
+                                <MenuItem Header="Exit" Click="Close_Click"/>
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+                    <Button Width="24" Height="24" Content="—"
+                               Click="Minimize_Click"
+                               Style="{StaticResource TitleBarButtonStyle}"/>
+                       <Button Width="24" Height="24" Content="✕"
+                               Click="Close_Click"
+                               Style="{StaticResource CloseButtonStyle}"/>
+                   </StackPanel>
+               </Grid>
+           </Border>
+        <Grid x:Name="MainContent">
+            <Button Content="Add 10 XP"
+                    Width="120"
+                    Height="40"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Click="AddXpButton_Click"
+                    Style="{StaticResource TitleBarButtonStyle}"/>
+        </Grid>
+    </DockPanel>
+    </Window>
