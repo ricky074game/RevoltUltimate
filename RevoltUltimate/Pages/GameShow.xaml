@@ -1,0 +1,38 @@
+﻿<UserControl x:Class="RevoltUltimate.Desktop.Pages.GameShow"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="270" d:DesignWidth="180">
+    <Grid>
+        <Border x:Name="AchievementBorder" BorderThickness="3" CornerRadius="10" Padding="2">
+            <Border.Effect>
+                <DropShadowEffect x:Name="BorderGlowEffect" ShadowDepth="0" BlurRadius="10" Opacity="0.75" Color="Transparent"/>
+            </Border.Effect>
+            <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="8" Padding="8" Background="#222">
+                <StackPanel>
+                    <Image x:Name="GameImage"
+                           Width="120"
+                           Height="180"
+                           Stretch="UniformToFill"
+                    />
+                    <TextBlock x:Name="GameTitleText"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               TextWrapping="Wrap"
+                               Foreground="White"
+                               Text="Game Title"
+                               TextAlignment="Center"
+                               Margin="0,0,0,4"/>
+                    <TextBlock x:Name="AchievementInfoText"
+                               FontSize="12"
+                               Foreground="#CCC"
+                               Text="Achievements: 0/0, 0%"
+                               TextAlignment="Center"/>
+                </StackPanel>
+            </Border>
+        </Border>
+        <Canvas x:Name="SparkleCanvas" IsHitTestVisible="False"/>
+    </Grid>
+</UserControl>

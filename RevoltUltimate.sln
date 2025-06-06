@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.13.35931.197 d17.13
+VisualStudioVersion = 17.13.35931.197
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RevoltUltimate", "RevoltUltimate\RevoltUltimate.csproj", "{67510B77-EDCC-4FF3-8DB4-A81F95FF1FB4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RevoltUltimate.Desktop", "RevoltUltimate\RevoltUltimate.Desktop.csproj", "{67510B77-EDCC-4FF3-8DB4-A81F95FF1FB4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RevoltUltimate.API", "RevoltUltimate.Shared\RevoltUltimate.API.csproj", "{28755F7D-9F9C-4D06-95DD-245DA0F9E8CD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{67510B77-EDCC-4FF3-8DB4-A81F95FF1FB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{67510B77-EDCC-4FF3-8DB4-A81F95FF1FB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{67510B77-EDCC-4FF3-8DB4-A81F95FF1FB4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28755F7D-9F9C-4D06-95DD-245DA0F9E8CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28755F7D-9F9C-4D06-95DD-245DA0F9E8CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28755F7D-9F9C-4D06-95DD-245DA0F9E8CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28755F7D-9F9C-4D06-95DD-245DA0F9E8CD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,4 +1,5 @@
-﻿using RevoltUltimate.Classes;
+﻿using RevoltUltimate.Desktop.Pages;
+using RevoltUltimate.Shared.Objects;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
@@ -6,11 +7,11 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
 
-namespace RevoltUltimate
+namespace RevoltUltimate.Desktop
 {
     public partial class MainWindow : Window
     {
-        private User _currentUser = new User("Player", 0, new List<Game>());
+        private User _currentUser = new("Player", 0, []);
         private const string UserFilePath = "user.json";
         public User CurrentUser
         {
@@ -32,6 +33,7 @@ namespace RevoltUltimate
             LoadUser();
             UpdateXpBar();
             UpdateLevelAndTooltipText();
+            AddGamesToGrid();
         }
 
         private void LoadUser()
@@ -39,11 +41,11 @@ namespace RevoltUltimate
             if (File.Exists(UserFilePath))
             {
                 string json = File.ReadAllText(UserFilePath);
-                CurrentUser = JsonSerializer.Deserialize<User>(json) ?? new User("Player", 0, new List<Game>());
+                CurrentUser = JsonSerializer.Deserialize<User>(json) ?? new User("Player", 0, []);
             }
             else
             {
-                CurrentUser = new User("Player", 0, new List<Game>());
+                CurrentUser = new User("Player", 0, []);
             }
             UpdateXpBar();
             UpdateLevelAndTooltipText();
@@ -151,6 +153,19 @@ namespace RevoltUltimate
         private void Menu_About_Click(object sender, RoutedEventArgs e)
         {
             MessageBox.Show("About clicked.");
+        }
+        private void AddGamesToGrid()
+        {
+            GamesGrid.Children.Clear();
+            var game = new Game(
+                "Age of Mythology",
+                "PC",
+                "",
+                "A classic real-time strategy game.",
+                "Standard"
+            );
+            var gameShow = new GameShow(game);
+            GamesGrid.Children.Add(gameShow);
         }
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
