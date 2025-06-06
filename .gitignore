@@ -361,3 +361,8 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/RevoltUltimate.Shared/ApiKey.txt
+
+/RevoltUltimate.Shared/SteamGridDbApiKey.txt
+/RevoltUltimate.Shared/SteamGridDbApiKey.txt
+/RevoltUltimate.Shared/Fetcher/SteamGridDbApiKey.txt
