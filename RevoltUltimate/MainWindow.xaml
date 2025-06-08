@@ -160,6 +160,10 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <UniformGrid x:Name="GamesGrid" Grid.Row="1" Columns="5" Margin="15"/>
+            <Button x:Name="GetAchievementButton"
+                    Content="Get Achievement"
+                    Margin="0,8,0,0"
+                    Click="GetAchievementButton_Click"/>
         </Grid>
     </DockPanel>
     </Window>

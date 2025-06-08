@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\RevoltUltimate.Notification\RevoltUltimate.Notification.csproj" />
     <ProjectReference Include="..\RevoltUltimate.Shared\RevoltUltimate.API.csproj" />
   </ItemGroup>
 

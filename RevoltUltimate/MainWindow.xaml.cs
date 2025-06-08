@@ -1,4 +1,5 @@
 ﻿using RevoltUltimate.Desktop.Pages;
+using RevoltUltimate.Notification;
 using RevoltUltimate.Shared.Objects;
 using System.IO;
 using System.Text.Json;
@@ -171,6 +172,27 @@ namespace RevoltUltimate.Desktop
         {
             SaveUser();
             base.OnClosing(e);
+        }
+
+        private void GetAchievementButton_Click(object sender, RoutedEventArgs e)
+        {
+            var achievement = new Achievement(
+                "First Steps",
+                "Complete the first level of the game.",
+                "https://example.com/achievement.png",
+                false,
+                1,
+                true,
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                "Easy"
+            );
+            var notification = new AchievementToastWindow();
+            var workingArea = System.Windows.SystemParameters.WorkArea;
+            notification.Left = workingArea.Right - notification.Width - 20;
+            notification.Top = workingArea.Bottom - notification.Height - 20;
+            notification.Show();
+            notification.Show(achievement);
+
         }
     }
 }
