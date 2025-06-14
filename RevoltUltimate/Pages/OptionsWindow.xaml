@@ -1,0 +1,48 @@
+﻿<Window x:Class="RevoltUltimate.Desktop.Pages.OptionsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:RevoltUltimate.Desktop.Pages"
+        mc:Ignorable="d"
+        Title="Options" Height="450" Width="600"
+        WindowStartupLocation="CenterScreen"
+        AllowsTransparency="True" WindowStyle="None" Background="Black" Foreground="White">
+
+    <Border BorderBrush="#444" BorderThickness="1">
+        <DockPanel>
+            <Border Height="30" DockPanel.Dock="Top" Background="#1C1C1C" MouseDown="TitleBar_MouseDown">
+                <Grid>
+                    <TextBlock Text="Options" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="10,0,0,0" Foreground="White"/>
+                    <Button Style="{StaticResource CloseButtonStyle}" 
+                            Content="✕" 
+                            HorizontalAlignment="Right" 
+                            Width="30" Height="30" 
+                            Click="CloseButton_Click"/>
+                </Grid>
+            </Border>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="180"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" BorderBrush="#444" BorderThickness="0,0,1,0">
+                    <ListBox x:Name="CategoryListBox"
+                             Background="Black"
+                             DisplayMemberPath="Name"
+                             SelectionChanged="CategoryListBox_SelectionChanged"
+                             BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled" d:ItemsSource="{d:SampleData ItemCount=5}"/>
+                </Border>
+
+                <Border Grid.Column="1" Padding="15">
+                    <ContentControl x:Name="OptionsContentControl" 
+                                    HorizontalContentAlignment="Stretch" 
+                                    VerticalContentAlignment="Stretch"/>
+                </Border>
+            </Grid>
+        </DockPanel>
+    </Border>
+</Window>

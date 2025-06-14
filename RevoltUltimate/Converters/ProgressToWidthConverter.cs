@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using System.Windows.Data;
 
-namespace RevoltUltimate.Converters
+namespace RevoltUltimate.Desktop.Converters
 {
     public class ProgressToWidthConverter : IMultiValueConverter
     {

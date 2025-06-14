@@ -1,14 +1,11 @@
-﻿using System;
-using System.Linq;
-using System.Windows.Controls;
-using System.Windows.Media.Imaging;
-using RevoltUltimate.API.Fetcher;
-using RevoltUltimate.Shared.Objects;
-using System.Threading.Tasks;
-using System.Windows.Media;
-using System.Windows.Shapes;
-using System.Windows.Media.Animation;
+﻿using RevoltUltimate.API.Fetcher;
+using RevoltUltimate.API.Objects;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
 
 namespace RevoltUltimate.Desktop.Pages
 {
@@ -215,7 +212,6 @@ namespace RevoltUltimate.Desktop.Pages
         {
             _sparkleStoryboard?.Stop();
             SparkleCanvas.Children.Clear(); // Clear old sparkles if any
-            // Re-initialize sparkles for next time, or just clear them
             InitializeSparkleAnimation(); // Re-add sparkles so they are ready
         }
     }

@@ -1,0 +1,12 @@
+﻿<Page x:Class="RevoltUltimate.Setup.Pages.WelcomePage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Title="Welcome">
+    <Grid>
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock Text="Welcome to RevoltUltimate!" FontSize="24" FontWeight="Bold" Margin="0,0,0,20"/>
+            <TextBlock Text="This setup will guide you through the initial configuration." TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,30"/>
+            <Button Content="Get Started" Width="120" Height="40" Click="GetStarted_Click"/>
+        </StackPanel>
+    </Grid>
+</Page>

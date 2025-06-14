@@ -14,7 +14,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="2.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\RevoltUltimate.Notification\RevoltUltimate.Notification.csproj" />
+    <ProjectReference Include="..\RevoltUltimate.Setup\RevoltUltimate.Setup.csproj" />
     <ProjectReference Include="..\RevoltUltimate.Shared\RevoltUltimate.API.csproj" />
   </ItemGroup>
 
@@ -25,12 +30,6 @@
     <Resource Include="Images\RoninLogo.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="Resources\achievements.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
 </Project>

@@ -78,8 +78,6 @@
         </Storyboard>
 
         <Storyboard x:Key="ExitStoryboard">
-            <!-- Stage 1: Circle Elements Zoom Out (0.0s - 0.5s) -->
-            <!-- CircleBackgroundEllipse -->
             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="CircleBackgroundEllipseScaleTransform" Storyboard.TargetProperty="ScaleX">
                 <LinearDoubleKeyFrame KeyTime="0:0:0" Value="1.0"/>
                 <EasingDoubleKeyFrame KeyTime="0:0:0.5" Value="1.35">
@@ -113,7 +111,6 @@
                 </DoubleAnimation.EasingFunction>
             </DoubleAnimation>
 
-            <!-- ProgressArcPath -->
             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="ProgressArcPathScaleTransform" Storyboard.TargetProperty="ScaleX">
                 <LinearDoubleKeyFrame KeyTime="0:0:0" Value="1.0"/>
                 <EasingDoubleKeyFrame KeyTime="0:0:0.5" Value="1.35">
@@ -147,7 +144,6 @@
                 </DoubleAnimation.EasingFunction>
             </DoubleAnimation>
 
-            <!-- Notches (Example for TopNotch, repeat for Bottom, Left, Right) -->
             <DoubleAnimationUsingKeyFrames Storyboard.TargetName="TopNotchScaleTransform" Storyboard.TargetProperty="ScaleX">
                 <LinearDoubleKeyFrame KeyTime="0:0:0" Value="1.0"/>
                 <EasingDoubleKeyFrame KeyTime="0:0:0.5" Value="1.35">

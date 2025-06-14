@@ -1,61 +1,135 @@
-﻿using RevoltUltimate.Desktop.Pages;
-using RevoltUltimate.Notification;
-using RevoltUltimate.Shared.Objects;
+﻿using Hardcodet.Wpf.TaskbarNotification;
+using RevoltUltimate.API.Objects;
+using RevoltUltimate.API.Searcher;
+using RevoltUltimate.Desktop.Pages;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace RevoltUltimate.Desktop
 {
     public partial class MainWindow : Window
     {
-        private User _currentUser = new("Player", 0, []);
-        private const string UserFilePath = "user.json";
-        public User CurrentUser
-        {
-            get => _currentUser;
-            set
-            {
-                _currentUser = value;
-                OnPropertyChanged(nameof(LevelDisplay));
-                OnPropertyChanged(nameof(XpTooltip));
-            }
-        }
-
-        public string LevelDisplay => CurrentUser?.GetLevel().ToString() ?? "1";
-        public string XpTooltip => $"XP: {CurrentUser?.GetXpForCurrentLevel() ?? 0}/{CurrentUser?.GetXpForNextLevel() ?? 100}";
+        private readonly String _userFilePath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData), "RevoltUltimate", "user.json");
+        private User CurrentUser => App.CurrentUser;
+        private TaskbarIcon _taskbarIcon;
+        private bool _isExplicitlyClosing = false;
+        private DispatcherTimer _backgroundTaskTimer;
 
         public MainWindow()
         {
             InitializeComponent();
-            LoadUser();
             UpdateXpBar();
             UpdateLevelAndTooltipText();
             AddGamesToGrid();
+
+            InitializeTaskbarIcon();
+            InitializeBackgroundTask();
         }
 
-        private void LoadUser()
+        private void InitializeTaskbarIcon()
         {
-            if (File.Exists(UserFilePath))
+            _taskbarIcon = new TaskbarIcon();
+            _taskbarIcon.ToolTipText = "RevoltUltimate";
+
+            try
             {
-                string json = File.ReadAllText(UserFilePath);
-                CurrentUser = JsonSerializer.Deserialize<User>(json) ?? new User("Player", 0, []);
+                var iconUri = new Uri("pack://application:,,,/images/RoninLogo.png");
+                _taskbarIcon.IconSource = new BitmapImage(iconUri);
             }
-            else
+            catch (Exception ex)
             {
-                CurrentUser = new User("Player", 0, []);
+                System.Diagnostics.Debug.WriteLine($"Error loading icon for TaskbarIcon: {ex.Message}");
             }
-            UpdateXpBar();
-            UpdateLevelAndTooltipText();
+
+            // Create WPF ContextMenu and apply style
+            var contextMenu = new ContextMenu();
+            if (FindResource("SharedContextMenuStyle") is Style contextMenuStyle)
+            {
+                contextMenu.Style = contextMenuStyle;
+            }
+
+            // Create MenuItems and apply style
+            var openItem = new MenuItem { Header = "Open" };
+            if (FindResource("SharedMenuItemStyle") is Style menuItemStyle) // Use FindResource
+            {
+                openItem.Style = menuItemStyle;
+            }
+            openItem.Click += TaskbarIcon_Open_Click;
+            contextMenu.Items.Add(openItem);
+
+            var closeItem = new MenuItem { Header = "Close" };
+            if (FindResource("SharedMenuItemStyle") is Style menuItemStyleForClose) // Use FindResource
+            {
+                closeItem.Style = menuItemStyleForClose;
+            }
+            closeItem.Click += TaskbarIcon_Close_Click;
+            contextMenu.Items.Add(closeItem);
+
+            _taskbarIcon.ContextMenu = contextMenu;
+            _taskbarIcon.TrayMouseDoubleClick += TaskbarIcon_TrayMouseDoubleClick_Open;
+        }
+
+        private void TaskbarIcon_TrayMouseDoubleClick_Open(object sender, RoutedEventArgs e)
+        {
+            PerformOpenAction();
+        }
+
+        private void TaskbarIcon_Open_Click(object sender, RoutedEventArgs e)
+        {
+            PerformOpenAction();
+        }
+
+        private void TaskbarIcon_Close_Click(object sender, RoutedEventArgs e)
+        {
+            PerformCloseAction();
+        }
+
+        private void PerformOpenAction()
+        {
+            this.Show();
+            this.WindowState = WindowState.Normal;
+            this.Activate();
+            this.ShowInTaskbar = true;
+        }
+
+        private void PerformCloseAction()
+        {
+            _isExplicitlyClosing = true;
+            _backgroundTaskTimer?.Stop();
+            _taskbarIcon?.Dispose();
+            _taskbarIcon = null;
+            System.Windows.Application.Current.Shutdown();
+        }
+
+        private void InitializeBackgroundTask()
+        {
+            _backgroundTaskTimer = new DispatcherTimer();
+            _backgroundTaskTimer.Interval = TimeSpan.FromSeconds(30);
+            _backgroundTaskTimer.Tick += BackgroundTask_Tick;
+            _backgroundTaskTimer.Start();
+            RunPeriodicBackgroundTask();
+        }
+
+        private void BackgroundTask_Tick(object sender, EventArgs e)
+        {
+            RunPeriodicBackgroundTask();
+        }
+
+        public void RunPeriodicBackgroundTask()
+        {
+            System.Diagnostics.Debug.WriteLine($"Background task running at: {DateTime.Now}");
         }
 
         private void SaveUser()
         {
             string json = JsonSerializer.Serialize(CurrentUser, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(UserFilePath, json);
+            File.WriteAllText(_userFilePath, json);
         }
 
         private void UpdateXpBar()
@@ -81,7 +155,6 @@ namespace RevoltUltimate.Desktop
             int newXp = CurrentUser.GetXpForCurrentLevel();
             int newMaxXp = CurrentUser.GetXpForNextLevel();
 
-            // If leveled up, animate to old max, then update max, reset, and animate to new value
             if (newXp < prevXp)
             {
                 AnimateXpBar(prevXp, prevMaxXp, () =>
@@ -111,7 +184,7 @@ namespace RevoltUltimate.Desktop
             };
             if (completed != null)
             {
-                animation.Completed += (s, e) => completed();
+                animation.Completed += (s, e_anim) => completed();
             }
             XpProgressBar.BeginAnimation(System.Windows.Controls.Primitives.RangeBase.ValueProperty, animation);
         }
@@ -122,12 +195,13 @@ namespace RevoltUltimate.Desktop
 
         private void Minimize_Click(object sender, RoutedEventArgs e)
         {
-            WindowState = WindowState.Minimized;
+            this.Hide();
+            this.ShowInTaskbar = false;
         }
 
         private void Close_Click(object sender, RoutedEventArgs e)
         {
-            Close();
+            base.Close();
         }
 
         private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)
@@ -138,7 +212,7 @@ namespace RevoltUltimate.Desktop
 
         private void HamburgerMenu_Click(object sender, RoutedEventArgs e)
         {
-            var button = sender as Button;
+            var button = sender as System.Windows.Controls.Button;
             if (button?.ContextMenu != null)
             {
                 button.ContextMenu.PlacementTarget = button;
@@ -148,51 +222,110 @@ namespace RevoltUltimate.Desktop
 
         private void Menu_Settings_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Settings clicked.");
+            OptionsWindow optionsWindow = new OptionsWindow
+            {
+                Owner = this
+            };
+            optionsWindow.ShowDialog();
         }
 
         private void Menu_About_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("About clicked.");
+            System.Windows.MessageBox.Show("About clicked.");
         }
-        private void AddGamesToGrid()
+
+        private async void AddGamesToGrid()
         {
-            GamesGrid.Children.Clear();
-            var game = new Game(
-                "Age of Mythology",
-                "PC",
-                "",
-                "A classic real-time strategy game.",
-                "Standard"
-            );
-            var gameShow = new GameShow(game);
-            GamesGrid.Children.Add(gameShow);
+            if (CurrentUser == null)
+            {
+                System.Diagnostics.Debug.WriteLine("CurrentUser is null. Cannot fetch games.");
+                return;
+            }
+
+            if (!MainSteam.Instance.IsSteamApiReady)
+            {
+                System.Diagnostics.Debug.WriteLine("Steam Web API is not ready (check API key and Steam ID). Cannot fetch games.");
+                return;
+            }
+
+            try
+            {
+                List<Game> steamGames = await MainSteam.Instance.Update();
+
+                if (CurrentUser.Games == null)
+                {
+                    CurrentUser.Games = new List<Game>();
+                }
+
+                bool newGamesAdded = false;
+                if (steamGames != null) // Good practice to check if the list itself could be null
+                {
+                    foreach (var steamGame in steamGames)
+                    {
+                        bool gameExists = CurrentUser.Games.Any(g =>
+                            g.Name.Equals(steamGame.Name, StringComparison.OrdinalIgnoreCase) &&
+                            g.Platform.Equals(steamGame.Platform, StringComparison.OrdinalIgnoreCase));
+
+                        if (!gameExists)
+                        {
+                            CurrentUser.Games.Add(steamGame);
+                            newGamesAdded = true;
+                            System.Diagnostics.Debug.WriteLine($"Added game to CurrentUser.Games: {steamGame.Name} ({steamGame.Platform})");
+                        }
+                    }
+                }
+
+                if (newGamesAdded)
+                {
+                    SaveUser(); // Save if new games were added to the persistent list
+                }
+
+                GamesGrid.Children.Clear(); // Clear existing games to avoid duplicates in the UI
+                if (CurrentUser.Games != null)
+                {
+                    foreach (var game in CurrentUser.Games)
+                    {
+                        var gameShowControl = new GameShow(game);
+                        GamesGrid.Children.Add(gameShowControl);
+                    }
+                    System.Diagnostics.Debug.WriteLine($"GamesGrid updated. Total games in UI: {CurrentUser.Games.Count}");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("CurrentUser.Games is null after processing. No games to show.");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error in AddGamesToGrid: {ex.Message}");
+            }
         }
+
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
             SaveUser();
+
+            if (!_isExplicitlyClosing)
+            {
+                e.Cancel = true;
+                this.Hide();
+                this.ShowInTaskbar = false;
+            }
+            else
+            {
+                _backgroundTaskTimer?.Stop();
+                _taskbarIcon?.Dispose();
+                _taskbarIcon = null;
+            }
             base.OnClosing(e);
         }
 
-        private void GetAchievementButton_Click(object sender, RoutedEventArgs e)
+        protected override void OnClosed(EventArgs e)
         {
-            var achievement = new Achievement(
-                "First Steps",
-                "Complete the first level of the game.",
-                "https://example.com/achievement.png",
-                false,
-                1,
-                true,
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                "Easy"
-            );
-            var notification = new AchievementToastWindow();
-            var workingArea = System.Windows.SystemParameters.WorkArea;
-            notification.Left = workingArea.Right - notification.Width - 20;
-            notification.Top = workingArea.Bottom - notification.Height - 20;
-            notification.Show();
-            notification.Show(achievement);
-
+            _backgroundTaskTimer?.Stop();
+            _taskbarIcon?.Dispose();
+            _taskbarIcon = null;
+            base.OnClosed(e);
         }
     }
 }

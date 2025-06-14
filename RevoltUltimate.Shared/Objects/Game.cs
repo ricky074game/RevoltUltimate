@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace RevoltUltimate.Shared.Objects
+﻿namespace RevoltUltimate.API.Objects
 {
     public class Game
     {

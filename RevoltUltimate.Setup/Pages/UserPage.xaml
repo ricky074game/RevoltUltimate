@@ -1,0 +1,13 @@
+﻿<Page x:Class="RevoltUltimate.Setup.Pages.UserPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Title="User Setup">
+    <Grid>
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock Text="Create Your Profile" FontSize="24" FontWeight="Bold" Margin="0,0,0,20"/>
+            <TextBlock Text="Choose a username to get started." Margin="0,0,0,10"/>
+            <TextBox x:Name="UsernameTextBox" Width="200" Margin="0,0,0,20"/>
+            <Button Content="Next" Width="120" Height="40" Click="Next_Click"/>
+        </StackPanel>
+    </Grid>
+</Page>

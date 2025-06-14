@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RevoltUltimate.API.Searcher
+namespace RevoltUltimate.API.Update
 {
-    public abstract class Searcher
+    public class SteamUpdate
     {
 
     }

@@ -1,4 +1,4 @@
-﻿namespace RevoltUltimate.Shared.Objects
+﻿namespace RevoltUltimate.API.Objects
 {
     public class User
     {

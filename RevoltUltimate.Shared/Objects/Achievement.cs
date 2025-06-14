@@ -1,4 +1,4 @@
-﻿namespace RevoltUltimate.Shared.Objects
+﻿namespace RevoltUltimate.API.Objects
 {
     public class Achievement(string name, string description, string imageUrl, bool hidden, int id, bool unlocked, string dateTimeUnlocked, string difficulty)
     {
