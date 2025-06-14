@@ -1,0 +1,43 @@
+{
+  "name": "finbest-finance-app",
+  "version": "1.0.0",
+  "private": true,
+  "homepage": "https://ricky074game.github.io/RevoltUltimate",
+  "dependencies": {
+    "@craco/craco": "^7.1.0",
+    "dangerous-html": "0.1.13",
+    "next": "^12.1.10",
+    "prop-types": "15.7.2",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "react-helmet": "^6.1.0",
+    "react-router-dom": "^5.2.0"
+  },
+  "scripts": {
+    "start": "craco start",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
+    "build": "craco build",
+    "test": "craco test --env=jsdom",
+    "eject": "craco eject"
+  },
+  "engines": {
+    "node": ">=18.x"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "gh-pages": "^6.3.0",
+    "react-scripts": "^5.0.1"
+  }
+}
