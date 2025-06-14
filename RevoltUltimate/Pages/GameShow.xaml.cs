@@ -19,19 +19,21 @@ namespace RevoltUltimate.Desktop.Pages
         {
             InitializeComponent();
             _game = game;
-            _gameBannerFetcher = new GameBanner(_game.Name);
+            System.Diagnostics.Debug.WriteLine(game.name);
+            System.Diagnostics.Debug.WriteLine(game.achievements);
+            _gameBannerFetcher = new GameBanner(_game.name);
             InitializeGameDataAsync();
             InitializeSparkleAnimation();
         }
 
         private async void InitializeGameDataAsync()
         {
-            SetGameTitle(_game.Name);
-            string? imageUrl = await _gameBannerFetcher.GetGameBannerUrlAsync(_game.Name);
+            SetGameTitle(_game.name);
+            string? imageUrl = await _gameBannerFetcher.GetGameBannerUrlAsync(_game.name);
             SetGameImage(imageUrl);
 
-            int unlockedAchievements = _game.Achievements?.Count(a => a.Unlocked) ?? 0;
-            int totalAchievements = _game.Achievements?.Count ?? 0;
+            int unlockedAchievements = _game.achievements?.Count(a => a.unlocked) ?? 0;
+            int totalAchievements = _game.achievements?.Count ?? 0;
             SetAchievementInfo(unlockedAchievements, totalAchievements);
             UpdateAchievementBorder(unlockedAchievements, totalAchievements);
         }
@@ -68,6 +70,20 @@ namespace RevoltUltimate.Desktop.Pages
         {
             string percentText = total > 0 ? $"{(unlocked * 100 / total)}%" : "0%";
             AchievementInfoText.Text = $"Achievements: {unlocked}/{total}, {percentText}";
+        }
+        private void OnGameAchievementsLoaded(object? sender, EventArgs e)
+        {
+            Dispatcher.Invoke(UpdateAchievementDisplay);
+        }
+
+        private void UpdateAchievementDisplay()
+        {
+            if (_game == null) return;
+
+            int unlockedAchievements = _game.achievements?.Count(a => a.unlocked) ?? 0;
+            int totalAchievements = _game.achievements?.Count ?? 0;
+            SetAchievementInfo(unlockedAchievements, totalAchievements);
+            UpdateAchievementBorder(unlockedAchievements, totalAchievements);
         }
 
         private void UpdateAchievementBorder(int unlocked, int total)
@@ -175,7 +191,7 @@ namespace RevoltUltimate.Desktop.Pages
             }
         }
 
-        private Point GetPointOnBorder(double progress) // progress from 0 to 1
+        private Point GetPointOnBorder(double progress)
         {
             double width = AchievementBorder.ActualWidth > 0 ? AchievementBorder.ActualWidth : 160; // d:DesignWidth as fallback
             double height = AchievementBorder.ActualHeight > 0 ? AchievementBorder.ActualHeight : 250; // d:DesignHeight as fallback
@@ -213,6 +229,10 @@ namespace RevoltUltimate.Desktop.Pages
             _sparkleStoryboard?.Stop();
             SparkleCanvas.Children.Clear(); // Clear old sparkles if any
             InitializeSparkleAnimation(); // Re-add sparkles so they are ready
+        }
+        private void GameShow_Unloaded(object sender, RoutedEventArgs e)
+        {
+            _sparkleStoryboard?.Stop(this);
         }
     }
 }

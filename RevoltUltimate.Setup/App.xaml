@@ -3,4 +3,76 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:RevoltUltimate.Setup"
              StartupUri="SetupWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <!-- Global Style for Window -->
+            <Style TargetType="Window">
+                <Setter Property="Background" Value="Black"/>
+                <Setter Property="Foreground" Value="White"/>
+            </Style>
+
+            <!-- Global Style for Page -->
+            <Style TargetType="Page">
+                <Setter Property="Background" Value="Black"/>
+                <Setter Property="Foreground" Value="White"/>
+            </Style>
+
+            <!-- Global Style for TextBlock -->
+            <Style TargetType="TextBlock">
+                <Setter Property="Foreground" Value="White"/>
+            </Style>
+
+            <!-- Global Style for Button -->
+            <Style TargetType="Button">
+                <Setter Property="Background" Value="Black"/>
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="BorderBrush" Value="White"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Padding" Value="5"/>
+                <!-- Add some padding for better appearance -->
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="3">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  Margin="{TemplateBinding Padding}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#333333"/>
+                                    <!-- Dark gray for hover -->
+                                    <Setter Property="BorderBrush" Value="LightGray"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter Property="Background" Value="#555555"/>
+                                    <!-- Slightly lighter gray for pressed -->
+                                    <Setter Property="Foreground" Value="LightGray"/>
+                                    <Setter Property="BorderBrush" Value="Gray"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Background" Value="#222222"/>
+                                    <Setter Property="Foreground" Value="Gray"/>
+                                    <Setter Property="BorderBrush" Value="DarkGray"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style TargetType="TextBox">
+                <Setter Property="Background" Value="#222222"/>
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="BorderBrush" Value="Gray"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Padding" Value="3"/>
+                <Setter Property="CaretBrush" Value="White"/>
+            </Style>
+
+        </ResourceDictionary>
+    </Application.Resources>
 </Application>

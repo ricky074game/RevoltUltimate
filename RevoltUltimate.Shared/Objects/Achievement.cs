@@ -1,20 +1,33 @@
 ﻿namespace RevoltUltimate.API.Objects
 {
-    public class Achievement(string name, string description, string imageUrl, bool hidden, int id, bool unlocked, string dateTimeUnlocked, string difficulty)
+    public class Achievement
     {
-        public string Name { get; private set; } = name;
-        public string Description { get; private set; } = description;
-        public string ImageUrl { get; private set; } = imageUrl;
-        public bool Hidden { get; private set; } = hidden;
-        public int Id { get; private set; } = id;
-        public bool Unlocked { get; private set; } = unlocked;
-        public string DateTimeUnlocked { get; private set; } = dateTimeUnlocked;
-        public string Difficulty { get; private set; } = difficulty;
+        public string name { get; private set; }
+        public string description { get; private set; }
+        public string imageUrl { get; private set; }
+        public bool hidden { get; private set; }
+        public int id { get; private set; }
+        public bool unlocked { get; private set; }
+        public string datetimeunlocked { get; private set; }
+        public string difficulty { get; private set; }
 
         public void SetUnlockedStatus(bool isUnlocked, string dateTime)
         {
-            this.Unlocked = isUnlocked;
-            this.DateTimeUnlocked = isUnlocked ? dateTime : string.Empty;
+            this.unlocked = isUnlocked;
+            this.datetimeunlocked = isUnlocked ? dateTime : string.Empty;
+        }
+
+        public Achievement(string Name, string Description, string ImageUrl, bool Hidden, int Id, bool Unlocked,
+            string DateTimeUnlocked, string Difficulty)
+        {
+            name = Name;
+            description = Description;
+            imageUrl = ImageUrl;
+            hidden = Hidden;
+            id = Id;
+            unlocked = Unlocked;
+            datetimeunlocked = DateTimeUnlocked;
+            difficulty = Difficulty;
         }
     }
 }

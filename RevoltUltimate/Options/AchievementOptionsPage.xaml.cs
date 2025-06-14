@@ -103,14 +103,14 @@ namespace RevoltUltimate.Desktop.Options
             }
 
             var testAchievement = new Achievement(
-                name: "Test Achievement",
-                description: "This is a test notification!",
-                imageUrl: "pack://application:,,,/RevoltUltimate.Core;component/Resources/default_achievement_icon.png",
-                hidden: false,
-                id: 999,
-                unlocked: true,
-                dateTimeUnlocked: DateTime.Now.ToString("o"),
-                difficulty: "Easy"
+                Name: "Test Achievement",
+                Description: "This is a test notification!",
+                ImageUrl: "pack://application:,,,/RevoltUltimate.Core;component/Resources/default_achievement_icon.png",
+                Hidden: false,
+                Id: 999,
+                Unlocked: true,
+                DateTimeUnlocked: DateTime.Now.ToString("o"),
+                Difficulty: "Easy"
             );
 
             AchievementWindow.ShowNotification(testAchievement, dllPath);

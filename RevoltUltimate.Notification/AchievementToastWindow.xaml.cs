@@ -74,8 +74,8 @@ namespace RevoltUltimate.Notification
 
         private void ShowAndAnimate()
         {
-            AchievementNameRun.Text = $" - {_currentAchievement.Name}";
-            AchievementScoreRun.Text = _currentAchievement.Difficulty;
+            AchievementNameRun.Text = $" - {_currentAchievement.name}";
+            AchievementScoreRun.Text = _currentAchievement.difficulty;
 
             var workingArea = System.Windows.SystemParameters.WorkArea;
             this.Left = workingArea.Left + (workingArea.Width - this.Width) / 2;

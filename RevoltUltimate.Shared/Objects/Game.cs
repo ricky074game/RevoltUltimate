@@ -1,27 +1,49 @@
-﻿namespace RevoltUltimate.API.Objects
+﻿using Newtonsoft.Json;
+
+namespace RevoltUltimate.API.Objects
 {
     public class Game
     {
-        public string Name { get; private set; }
-        public string Platform { get; private set; }
-        public string ImageUrl { get; private set; }
-        public string Description { get; private set; }
-        public string Method { get; private set; }
-        public List<Achievement> Achievements { get; private set; }
+        public string name { get; private set; }
+        public string platform { get; private set; }
+        public string imageUrl { get; private set; }
+        public string description { get; private set; }
+        public string method { get; private set; }
+        public List<Achievement> achievements { get; private set; }
 
         public Game(string name, string platform, string imageUrl, string description, string method)
         {
-            this.Name = name;
-            this.Platform = platform;
-            this.ImageUrl = imageUrl;
-            this.Description = description;
-            this.Method = method;
-            this.Achievements = new List<Achievement>();
+            this.name = name;
+            this.platform = platform;
+            this.imageUrl = imageUrl;
+            this.description = description;
+            this.method = method;
+            this.achievements = new List<Achievement>();
+        }
+
+        [JsonConstructor]
+        public Game(string Name, string Platform, string ImageUrl, string Description, string Method, List<Achievement> Achievements)
+        {
+            this.name = Name;
+            this.platform = Platform;
+            this.imageUrl = ImageUrl;
+            this.description = Description;
+            this.method = Method;
+            this.achievements = Achievements;
         }
 
         public void AddAchievement(Achievement achievement)
         {
-            this.Achievements.Add(achievement);
+            achievements.Add(achievement);
+        }
+
+        public void AddAchievements(List<Achievement> achievements)
+        {
+            if (!achievements.Any())
+            {
+                return;
+            }
+            this.achievements.AddRange(achievements);
         }
     }
 }

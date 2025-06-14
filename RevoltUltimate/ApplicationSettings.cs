@@ -12,6 +12,8 @@ namespace RevoltUltimate.Desktop
         public String Version { get; set; } = "0.1";
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? CustomAnimationDllPath { get; set; }
+        public string? SteamApiKey { get; set; }
+        public string? SteamId { get; set; }
 
         public ApplicationSettings()
         {

@@ -1,136 +1,94 @@
 ﻿using RevoltUltimate.API.Objects;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using Steam.Models.SteamPlayer;
+using SteamWebAPI2.Interfaces;
+using SteamWebAPI2.Utilities;
+using System; // Required for Console.WriteLine, Exception, InvalidOperationException
+using System.Collections.Generic; // Required for List<T>
+using System.Linq; // Required for ToDictionary
+using System.Threading.Tasks; // Required for Task
 
 namespace RevoltUltimate.API.Searcher
 {
-    internal class SteamOwnedGamesResponse
-    {
-        [JsonPropertyName("response")]
-        public OwnedGamesData Response { get; set; }
-    }
-
-    internal class OwnedGamesData
-    {
-        [JsonPropertyName("game_count")]
-        public int GameCount { get; set; }
-
-        [JsonPropertyName("games")]
-        public List<SteamGameInfo> Games { get; set; }
-    }
-
-    internal class SteamGameInfo
-    {
-        [JsonPropertyName("appid")]
-        public int AppId { get; set; }
-
-        [JsonPropertyName("name")]
-        public string Name { get; set; }
-
-        [JsonPropertyName("img_icon_url")]
-        public string ImgIconUrl { get; set; }
-    }
-
-    internal class SteamPlayerAchievementsResponse
-    {
-        [JsonPropertyName("playerstats")]
-        public PlayerStatsData PlayerStats { get; set; }
-    }
-
-    internal class PlayerStatsData
-    {
-        [JsonPropertyName("steamID")]
-        public string SteamID { get; set; }
-
-        [JsonPropertyName("gameName")]
-        public string GameName { get; set; } // Game name as known by Steam
-
-        [JsonPropertyName("achievements")]
-        public List<SteamPlayerAchievement> Achievements { get; set; }
-
-        [JsonPropertyName("success")]
-        public bool Success { get; set; }
-    }
-
-    internal class SteamPlayerAchievement
-    {
-        [JsonPropertyName("apiname")]
-        public string ApiName { get; set; }
-
-        [JsonPropertyName("achieved")]
-        public int Achieved { get; set; } // 0 or 1
-
-        [JsonPropertyName("unlocktime")]
-        public long UnlockTime { get; set; } // Unix timestamp
-    }
-
-    internal class SteamGameSchemaResponse
-    {
-        [JsonPropertyName("game")]
-        public GameSchemaData Game { get; set; }
-    }
-
-    internal class GameSchemaData
-    {
-        [JsonPropertyName("gameName")]
-        public string GameName { get; set; }
-
-        [JsonPropertyName("availableGameStats")]
-        public AvailableGameStats Stats { get; set; }
-    }
-
-    internal class AvailableGameStats
-    {
-        [JsonPropertyName("achievements")]
-        public List<SteamAchievementSchema> Achievements { get; set; }
-    }
-
-    internal class SteamAchievementSchema
-    {
-        [JsonPropertyName("name")]
-        public string Name { get; set; }
-
-        [JsonPropertyName("displayName")]
-        public string DisplayName { get; set; }
-
-        [JsonPropertyName("hidden")]
-        public int Hidden { get; set; } // 0 or 1
-
-        [JsonPropertyName("description")]
-        public string Description { get; set; }
-
-        [JsonPropertyName("icon")]
-        public string Icon { get; set; }
-
-        [JsonPropertyName("icongray")]
-        public string IconGray { get; set; }
-    }
-
     public class MainSteam
     {
-        private static readonly MainSteam _instance = new MainSteam();
-        public static MainSteam Instance => _instance;
+        private static MainSteam _instance;
+        public static MainSteam Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    throw new InvalidOperationException($"{nameof(MainSteam)} has not been initialized. Call {nameof(InitializeSharedInstance)} first.");
+                }
+                return _instance;
+            }
+        }
 
-        private readonly HttpClient _httpClient;
-        private readonly string _apiKey;
-        private readonly string _steamId;
+        private string _apiKey; // Store API key
+        private string _steamIdString; // Store Steam ID string
+
+        private SteamWebInterfaceFactory _webInterfaceFactory;
+        private PlayerService _playerService;
+        private SteamUserStats _steamUserStats;
+        private ulong _steamId64;
 
         private bool _isReady = false;
 
-        private MainSteam()
+        private MainSteam(string apiKey, string steamIdString)
         {
-            _httpClient = new HttpClient();
-            _apiKey = "";
-            _steamId = "76561198887014425";
+            this._apiKey = apiKey;
+            this._steamIdString = steamIdString;
+            InitializeInternal();
+        }
 
-            if (!string.IsNullOrEmpty(_apiKey) && _apiKey != "YOUR_API_KEY" &&
-                !string.IsNullOrEmpty(_steamId) && _steamId != "USER_STEAM_ID")
+        public static void InitializeSharedInstance(string apiKey, string steamId)
+        {
+            if (string.IsNullOrWhiteSpace(apiKey))
             {
-                _isReady = true;
+                Console.WriteLine($"{nameof(InitializeSharedInstance)}: API key cannot be null or empty.");
+            }
+            if (string.IsNullOrWhiteSpace(steamId))
+            {
+                Console.WriteLine($"{nameof(InitializeSharedInstance)}: Steam ID cannot be null or empty.");
+            }
+            _instance = new MainSteam(apiKey, steamId);
+        }
+
+        public void Reinitialize(string newApiKey, string newSteamId)
+        {
+            this._apiKey = newApiKey;
+            this._steamIdString = newSteamId;
+            InitializeInternal(); 
+        }
+
+        private void InitializeInternal()
+        {
+            _isReady = false; 
+
+            if (!string.IsNullOrEmpty(_apiKey) &&
+                !string.IsNullOrEmpty(_steamIdString))
+            {
+                try
+                {
+                    _webInterfaceFactory = new SteamWebInterfaceFactory(_apiKey);
+                    _playerService = _webInterfaceFactory.CreateSteamWebInterface<PlayerService>();
+                    _steamUserStats = _webInterfaceFactory.CreateSteamWebInterface<SteamUserStats>();
+
+                    if (!ulong.TryParse(_steamIdString, out _steamId64))
+                    {
+                        Console.WriteLine($"Invalid Steam ID format: {_steamIdString}");
+                        return;
+                    }
+                    _isReady = true;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Error initializing SteamWebAPI2 with provided settings: {e.Message}");
+                }
             }
             else
             {
-                Console.WriteLine("Steam Web API key or Steam ID is not configured.");
+                Console.WriteLine("Steam Web API key or Steam ID is not configured or provided.");
             }
         }
 
@@ -145,25 +103,19 @@ namespace RevoltUltimate.API.Searcher
         {
             if (!_isReady)
             {
-                Console.WriteLine("Steam Web API not ready. Check API key and Steam ID.");
+                Console.WriteLine("Steam Web API not ready. Ensure it's initialized with valid API key and Steam ID.");
                 return new List<Game>();
             }
 
             var games = new List<Game>();
-            string url = $"http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={_apiKey}&steamid={_steamId}&format=json&include_appinfo=1";
 
             try
             {
-                HttpResponseMessage response = await _httpClient.GetAsync(url);
-                response.EnsureSuccessStatusCode();
-                string jsonResponse = await response.Content.ReadAsStringAsync();
+                var ownedGamesResponse = await _playerService.GetOwnedGamesAsync(_steamId64, includeAppInfo: true, includeFreeGames: false);
 
-                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                SteamOwnedGamesResponse ownedGamesResponse = JsonSerializer.Deserialize<SteamOwnedGamesResponse>(jsonResponse, options);
-
-                if (ownedGamesResponse?.Response?.Games != null)
+                if (ownedGamesResponse?.Data?.OwnedGames != null)
                 {
-                    foreach (var steamGameInfo in ownedGamesResponse.Response.Games)
+                    foreach (var steamGameInfo in ownedGamesResponse.Data.OwnedGames)
                     {
                         string imageUrl = "";
                         if (!string.IsNullOrEmpty(steamGameInfo.ImgIconUrl) && steamGameInfo.AppId > 0)
@@ -171,66 +123,52 @@ namespace RevoltUltimate.API.Searcher
                             imageUrl = $"http://media.steampowered.com/steamcommunity/public/images/apps/{steamGameInfo.AppId}/{steamGameInfo.ImgIconUrl}.jpg";
                         }
                         var game = new Game(steamGameInfo.Name, "Steam", imageUrl, "", "Steam Web API");
-                        await GetAchievementsForGameAsync(game, steamGameInfo.AppId);
+                        var achievements = await GetAchievementsForGameAsync(game, (int)steamGameInfo.AppId);
+                        game.AddAchievements(achievements);
                         games.Add(game);
                     }
                 }
             }
-            catch (HttpRequestException e)
+            catch (Exception e)
             {
-                Console.WriteLine($"Request error: {e.Message}");
-            }
-            catch (JsonException e)
-            {
-                Console.WriteLine($"JSON parsing error: {e.Message}");
-            }
-            catch (Exception e) // Catch any other unexpected errors
-            {
-                Console.WriteLine($"An unexpected error occurred: {e.Message}");
+                Console.WriteLine($"Error updating games using SteamWebAPI2: {e.Message}");
             }
             return games;
         }
 
-        private async Task GetAchievementsForGameAsync(Game game, int appId)
+        private async Task<List<Achievement>?> GetAchievementsForGameAsync(Game game, int appId)
         {
-            if (!_isReady) return;
+            if (!_isReady) return null;
 
-            // Step 1: Get player's achievement status for the game
-            string playerAchievementsUrl = $"http://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid={appId}&key={_apiKey}&steamid={_steamId}&format=json";
-            // Step 2: Get global achievement percentages (contains names, descriptions, icons)
-            string gameSchemaUrl = $"http://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/?key={_apiKey}&appid={appId}&format=json";
+            List<Achievement> achievements = new List<Achievement>();
+
+            uint uAppId = (uint)appId;
 
             try
             {
-                // Fetch player achievements
-                HttpResponseMessage playerResponse = await _httpClient.GetAsync(playerAchievementsUrl);
-                playerResponse.EnsureSuccessStatusCode();
-                string playerJsonResponse = await playerResponse.Content.ReadAsStringAsync();
-                var playerAchievementsData = JsonSerializer.Deserialize<SteamPlayerAchievementsResponse>(playerJsonResponse);
+                var playerAchievementsResponse = await _steamUserStats.GetPlayerAchievementsAsync(uAppId, _steamId64);
+                var gameSchemaResponse = await _steamUserStats.GetSchemaForGameAsync(uAppId);
 
-                // Fetch game schema for achievement details
-                HttpResponseMessage schemaResponse = await _httpClient.GetAsync(gameSchemaUrl);
-                schemaResponse.EnsureSuccessStatusCode();
-                string schemaJsonResponse = await schemaResponse.Content.ReadAsStringAsync();
-                var gameSchemaData = JsonSerializer.Deserialize<SteamGameSchemaResponse>(schemaJsonResponse);
-
-                if (playerAchievementsData?.PlayerStats?.Achievements != null && gameSchemaData?.Game?.Stats?.Achievements != null)
+                if (playerAchievementsResponse?.Data?.Achievements != null && gameSchemaResponse?.Data?.AvailableGameStats?.Achievements != null)
                 {
-                    var playerAchievements = playerAchievementsData.PlayerStats.Achievements.ToDictionary(a => a.ApiName);
-                    var schemaAchievements = gameSchemaData.Game.Stats.Achievements;
+                    var playerAchievements = playerAchievementsResponse.Data.Achievements.ToDictionary(a => a.APIName);
+                    var schemaAchievements = gameSchemaResponse.Data.AvailableGameStats.Achievements;
 
                     for (int i = 0; i < schemaAchievements.Count; i++)
                     {
-                        var schemaAch = schemaAchievements[i];
+                        var schemaAch = schemaAchievements.ElementAt(i);
                         bool isUnlocked = false;
                         string unlockTimestamp = "";
 
-                        if (playerAchievements.TryGetValue(schemaAch.Name, out SteamPlayerAchievement playerAch))
+                        if (playerAchievements.TryGetValue(schemaAch.Name, out PlayerAchievementModel playerAch))
                         {
-                            isUnlocked = playerAch.Achieved == 1;
-                            if (isUnlocked && playerAch.UnlockTime > 0)
+                            isUnlocked = playerAch.Achieved == 1; // Correctly check if unlocked
+                            if (isUnlocked && playerAch.UnlockTime != default(DateTime))
                             {
-                                unlockTimestamp = DateTimeOffset.FromUnixTimeSeconds(playerAch.UnlockTime).LocalDateTime.ToString();
+                                if (playerAch.UnlockTime > DateTime.MinValue)
+                                {
+                                    unlockTimestamp = playerAch.UnlockTime.ToLocalTime().ToString();
+                                }
                             }
                         }
 
@@ -239,27 +177,20 @@ namespace RevoltUltimate.API.Searcher
                             schemaAch.Description,
                             schemaAch.Icon,
                             schemaAch.Hidden == 1,
-                            i, // Using loop index as ID, similar to original code
+                            i, 
                             isUnlocked,
                             unlockTimestamp,
-                            "" // Difficulty is not a standard Steam achievement property
+                            ""
                         );
-                        game.AddAchievement(achievement);
+                        achievements.Add(achievement);
                     }
                 }
             }
-            catch (HttpRequestException e)
+            catch (Exception e)
             {
-                Console.WriteLine($"Request error for game {game.Name} (AppID: {appId}): {e.Message}");
+                Console.WriteLine($"Error fetching achievements for game {game.name} (AppID: {appId}) using SteamWebAPI2: {e.Message}");
             }
-            catch (JsonException e)
-            {
-                Console.WriteLine($"JSON parsing error for game {game.Name} (AppID: {appId}): {e.Message}");
-            }
-            catch (Exception e) // Catch any other unexpected errors
-            {
-                Console.WriteLine($"An unexpected error occurred while fetching achievements for game {game.Name} (AppID: {appId}): {e.Message}");
-            }
+            return achievements;
         }
     }
 }

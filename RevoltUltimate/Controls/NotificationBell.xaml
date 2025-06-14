@@ -1,0 +1,108 @@
+﻿<UserControl x:Class="RevoltUltimate.Desktop.Controls.NotificationBell"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:RevoltUltimate.Desktop"
+             xmlns:notification="clr-namespace:RevoltUltimate.API.Notification;assembly=RevoltUltimate.API"
+             mc:Ignorable="d" 
+             d:DesignHeight="40" d:DesignWidth="40">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <Style x:Key="NotificationButtonStyle" TargetType="Button" BasedOn="{StaticResource TitleBarButtonStyle}">
+            <!-- BasedOn ensures it inherits from your existing TitleBarButtonStyle -->
+            <!-- Properties below are fallbacks or overrides if needed -->
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#333333"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#555555"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <DataTemplate x:Key="NotificationItemTemplate" DataType="{x:Type notification:NotificationItem}">
+            <Border Padding="5" Margin="2" BorderThickness="0,0,0,1" BorderBrush="#333333">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding TaskName}" FontWeight="SemiBold" Foreground="White"/>
+                        <TextBlock Text=" (" Margin="2,0,0,0" Foreground="Gray">
+                            <Run Text="{Binding Status}"/>
+                        </TextBlock>
+                        <TextBlock Text=")" Foreground="Gray"/>
+                    </StackPanel>
+                    <TextBlock Grid.Row="1" Text="{Binding ErrorMessage}" Foreground="Red" FontStyle="Italic"
+                               Visibility="{Binding ErrorMessage, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter=NotNullOrEmpty}"/>
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <Style x:Key="NotificationPopupStyle" TargetType="Popup">
+            <Setter Property="AllowsTransparency" Value="True"/>
+            <Setter Property="Placement" Value="Bottom"/>
+            <Setter Property="PopupAnimation" Value="Fade"/>
+        </Style>
+
+        <Style x:Key="NotificationBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="Black"/>
+            <Setter Property="BorderBrush" Value="White"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="MaxHeight" Value="300"/>
+            <Setter Property="Width" Value="300"/>
+        </Style>
+
+        <Style x:Key="NotificationItemsControlStyle" TargetType="ItemsControl">
+            <Setter Property="ItemTemplate" Value="{StaticResource NotificationItemTemplate}"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Button x:Name="NotificationButton" Style="{StaticResource NotificationButtonStyle}" ToolTip="Notifications" Click="NotificationButton_Click">
+            <Grid>
+                <Image Source="/images/bell.png" 
+                       Width="16" Height="16" 
+                       VerticalAlignment="Center" HorizontalAlignment="Center"
+                       RenderOptions.BitmapScalingMode="Fant"/>
+
+                <MediaElement x:Name="BusyIndicatorGif"
+                              Source="/images/circle.gif"
+                    Width="5" Height="5"
+                    VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                              MediaEnded="BusyIndicatorGif_MediaEnded"
+                LoadedBehavior="Play" UnloadedBehavior="Stop"
+                              IsMuted="True" ScrubbingEnabled="False" Stretch="Uniform"
+                              Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            </Grid>
+        </Button>
+
+        <Popup x:Name="NotificationPopup" Style="{StaticResource NotificationPopupStyle}" StaysOpen="False"
+               PlacementTarget="{Binding ElementName=NotificationButton}">
+            <Border Style="{StaticResource NotificationBorderStyle}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Notifications}" Style="{StaticResource NotificationItemsControlStyle}"/>
+                </ScrollViewer>
+            </Border>
+        </Popup>
+    </Grid>
+</UserControl>

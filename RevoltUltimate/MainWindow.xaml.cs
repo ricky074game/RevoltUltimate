@@ -1,8 +1,10 @@
 ﻿using Hardcodet.Wpf.TaskbarNotification;
+using RevoltUltimate.API.Notification;
 using RevoltUltimate.API.Objects;
 using RevoltUltimate.API.Searcher;
 using RevoltUltimate.Desktop.Pages;
 using System.IO;
+using System.Net.Http;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,13 +19,18 @@ namespace RevoltUltimate.Desktop
     {
         private readonly String _userFilePath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData), "RevoltUltimate", "user.json");
         private User CurrentUser => App.CurrentUser;
+        private readonly String _settingsFilePath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData), "RevoltUltimate", "settings.json"); // Added settings file path
+
         private TaskbarIcon _taskbarIcon;
         private bool _isExplicitlyClosing = false;
         private DispatcherTimer _backgroundTaskTimer;
+        public NotificationViewModel NotificationViewModel { get; private set; }
 
         public MainWindow()
         {
             InitializeComponent();
+            NotificationViewModel = new NotificationViewModel();
+            NotificationSystem.DataContext = NotificationViewModel;
             UpdateXpBar();
             UpdateLevelAndTooltipText();
             AddGamesToGrid();
@@ -47,16 +54,14 @@ namespace RevoltUltimate.Desktop
                 System.Diagnostics.Debug.WriteLine($"Error loading icon for TaskbarIcon: {ex.Message}");
             }
 
-            // Create WPF ContextMenu and apply style
             var contextMenu = new ContextMenu();
             if (FindResource("SharedContextMenuStyle") is Style contextMenuStyle)
             {
                 contextMenu.Style = contextMenuStyle;
             }
 
-            // Create MenuItems and apply style
             var openItem = new MenuItem { Header = "Open" };
-            if (FindResource("SharedMenuItemStyle") is Style menuItemStyle) // Use FindResource
+            if (FindResource("SharedMenuItemStyle") is Style menuItemStyle)
             {
                 openItem.Style = menuItemStyle;
             }
@@ -64,7 +69,7 @@ namespace RevoltUltimate.Desktop
             contextMenu.Items.Add(openItem);
 
             var closeItem = new MenuItem { Header = "Close" };
-            if (FindResource("SharedMenuItemStyle") is Style menuItemStyleForClose) // Use FindResource
+            if (FindResource("SharedMenuItemStyle") is Style menuItemStyleForClose)
             {
                 closeItem.Style = menuItemStyleForClose;
             }
@@ -126,10 +131,33 @@ namespace RevoltUltimate.Desktop
             System.Diagnostics.Debug.WriteLine($"Background task running at: {DateTime.Now}");
         }
 
-        private void SaveUser()
+        private void Save()
         {
-            string json = JsonSerializer.Serialize(CurrentUser, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(_userFilePath, json);
+            try
+            {
+                string? directoryPath = Path.GetDirectoryName(_userFilePath);
+                if (directoryPath != null && !Directory.Exists(directoryPath))
+                {
+                    Directory.CreateDirectory(directoryPath);
+                }
+
+                if (CurrentUser != null)
+                {
+                    string userJson = JsonSerializer.Serialize(CurrentUser, new JsonSerializerOptions { WriteIndented = true });
+                    File.WriteAllText(_userFilePath, userJson);
+                }
+
+                if (App.Settings != null)
+                {
+                    string settingsJson = JsonSerializer.Serialize(App.Settings, new JsonSerializerOptions { WriteIndented = true });
+                    File.WriteAllText(_settingsFilePath, settingsJson);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error saving data: {ex.Message}");
+            }
+
         }
 
         private void UpdateXpBar()
@@ -151,7 +179,7 @@ namespace RevoltUltimate.Desktop
             int prevXp = CurrentUser.GetXpForCurrentLevel();
             int prevMaxXp = CurrentUser.GetXpForNextLevel();
             CurrentUser.Xp += 10;
-            SaveUser();
+            Save();
             int newXp = CurrentUser.GetXpForCurrentLevel();
             int newMaxXp = CurrentUser.GetXpForNextLevel();
 
@@ -234,8 +262,9 @@ namespace RevoltUltimate.Desktop
             System.Windows.MessageBox.Show("About clicked.");
         }
 
-        private async void AddGamesToGrid()
+        private async Task AddGamesToGrid()
         {
+
             if (CurrentUser == null)
             {
                 System.Diagnostics.Debug.WriteLine("CurrentUser is null. Cannot fetch games.");
@@ -247,6 +276,8 @@ namespace RevoltUltimate.Desktop
                 System.Diagnostics.Debug.WriteLine("Steam Web API is not ready (check API key and Steam ID). Cannot fetch games.");
                 return;
             }
+            string taskName = "Fetching games from steamapi";
+            NotificationViewModel.AddTask(taskName);
 
             try
             {
@@ -258,29 +289,29 @@ namespace RevoltUltimate.Desktop
                 }
 
                 bool newGamesAdded = false;
-                if (steamGames != null) // Good practice to check if the list itself could be null
+                if (steamGames != null)
                 {
                     foreach (var steamGame in steamGames)
                     {
                         bool gameExists = CurrentUser.Games.Any(g =>
-                            g.Name.Equals(steamGame.Name, StringComparison.OrdinalIgnoreCase) &&
-                            g.Platform.Equals(steamGame.Platform, StringComparison.OrdinalIgnoreCase));
+                            g.name.Equals(steamGame.name, StringComparison.OrdinalIgnoreCase) &&
+                            g.platform.Equals(steamGame.platform, StringComparison.OrdinalIgnoreCase));
 
                         if (!gameExists)
                         {
                             CurrentUser.Games.Add(steamGame);
                             newGamesAdded = true;
-                            System.Diagnostics.Debug.WriteLine($"Added game to CurrentUser.Games: {steamGame.Name} ({steamGame.Platform})");
+                            System.Diagnostics.Debug.WriteLine($"Added game to CurrentUser.Games: {steamGame.name} ({steamGame.platform})");
                         }
                     }
                 }
-
+                NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Success);
                 if (newGamesAdded)
                 {
-                    SaveUser(); // Save if new games were added to the persistent list
+                    Save();
                 }
 
-                GamesGrid.Children.Clear(); // Clear existing games to avoid duplicates in the UI
+                GamesGrid.Children.Clear();
                 if (CurrentUser.Games != null)
                 {
                     foreach (var game in CurrentUser.Games)
@@ -295,15 +326,21 @@ namespace RevoltUltimate.Desktop
                     System.Diagnostics.Debug.WriteLine("CurrentUser.Games is null after processing. No games to show.");
                 }
             }
+            catch (HttpRequestException httpEx) // Catch specific HttpRequestException
+            {
+                System.Diagnostics.Debug.WriteLine($"Error fetching games from Steam API: {httpEx.Message}");
+                NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed, httpEx.Message); // Update notification with error
+            }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error in AddGamesToGrid: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Error in Grid: {ex.Message}");
+                NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed, "An unexpected error occurred."); // Generic error for other exceptions
             }
         }
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
-            SaveUser();
+            Save();
 
             if (!_isExplicitlyClosing)
             {

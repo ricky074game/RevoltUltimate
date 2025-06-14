@@ -91,11 +91,11 @@ namespace RevoltUltimate.Desktop
             UpdateSettings();
             if (Settings == null)
             {
-                Settings = new ApplicationSettings
-                {
-                    Version = CurrentSettingsVersion,
-                    CustomAnimationDllPath = string.Empty,
-                };
+                MessageBox.Show("Settings file is missing or corrupted. The application will now open setup.", "Settings Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                this.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+                SetupWindow setupWindow = new SetupWindow();
+                setupWindow.Show();
+                return;
             }
             this.ShutdownMode = ShutdownMode.OnMainWindowClose;
             MainWindow mainWindow = new MainWindow();

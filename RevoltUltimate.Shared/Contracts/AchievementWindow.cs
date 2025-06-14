@@ -1,7 +1,6 @@
 ﻿using RevoltUltimate.API.Objects;
+using System.IO;
 using System.Reflection;
-
-using static System.Net.Mime.MediaTypeNames;
 
 namespace RevoltUltimate.API.Contracts
 {
