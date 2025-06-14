@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/RevoltUltimate/static/css/main.7a8f4949.css",
+    "main.js": "/RevoltUltimate/static/js/main.53145982.js",
+    "index.html": "/RevoltUltimate/index.html",
+    "main.7a8f4949.css.map": "/RevoltUltimate/static/css/main.7a8f4949.css.map",
+    "main.53145982.js.map": "/RevoltUltimate/static/js/main.53145982.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.7a8f4949.css",
+    "static/js/main.53145982.js"
+  ]
+}
