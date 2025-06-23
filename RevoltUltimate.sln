@@ -9,8 +9,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RevoltUltimate.API", "Revol
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RevoltUltimate.Notification", "RevoltUltimate.Notification\RevoltUltimate.Notification.csproj", "{B76603D8-F95A-47DC-A74C-75260A550016}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RevoltUltimate.Setup", "RevoltUltimate.Setup\RevoltUltimate.Setup.csproj", "{889AA236-560F-49DB-9CA8-A6CD8C641A37}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,10 +27,6 @@ Global
 		{B76603D8-F95A-47DC-A74C-75260A550016}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B76603D8-F95A-47DC-A74C-75260A550016}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B76603D8-F95A-47DC-A74C-75260A550016}.Release|Any CPU.Build.0 = Release|Any CPU
-		{889AA236-560F-49DB-9CA8-A6CD8C641A37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{889AA236-560F-49DB-9CA8-A6CD8C641A37}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{889AA236-560F-49DB-9CA8-A6CD8C641A37}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{889AA236-560F-49DB-9CA8-A6CD8C641A37}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

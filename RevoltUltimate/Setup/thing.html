@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .setup-window {
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        .step {
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease-in-out;
+            will-change: transform, opacity;
+        }
+
+        .step-active {
+            transform: translateX(0);
+            opacity: 1;
+            z-index: 10;
+        }
+        
+        .step-inactive-right {
+            transform: translateX(100%);
+            opacity: 0;
+            position: absolute;
+        }
+
+        .step-inactive-left {
+            transform: translateX(-100%);
+            opacity: 0;
+            position: absolute;
+        }
+
+        .progress-circle {
+            transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease;
+        }
+
+        .progress-circle.active {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+
+        .platform-box .checkmark {
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.3s ease-out;
+        }
+
+        .platform-box.completed .checkmark {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .platform-box.completed {
+             border-color: #3b82f6;
+        }
+        
+        #context-menu {
+            position: absolute;
+            z-index: 1000;
+            transition: opacity 0.1s ease-out, transform 0.1s ease-out;
+            transform: scale(0.95);
+            opacity: 0;
+        }
+        
+        #context-menu.visible {
+             transform: scale(1);
+             opacity: 1;
+        }
+        
+        /* Style for the profile picture preview */
+        #pfp-preview-container {
+            border: 3px dashed #4a5568; /* gray-600 */
+        }
+
+    </style>
+</head>
+<body class="bg-gray-900 flex items-center justify-center h-screen" onclick="hideContextMenu()">
+
+    <!-- Setup Window Container -->
+    <div id="setup-window" class="setup-window bg-[#121212] rounded-2xl w-full max-w-3xl h-[700px] flex flex-col text-white">
+
+        <!-- Top Bar -->
+        <div class="flex-shrink-0 h-12 bg-[#1e1e1e] flex items-center justify-between px-4 rounded-t-2xl">
+            <div class="flex items-center space-x-2">
+                <div class="font-black text-xl italic text-blue-500">R</div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <div class="w-3 h-3 bg-gray-600 rounded-full hover:bg-white transition-colors cursor-pointer"></div>
+                <div class="w-3 h-3 bg-gray-600 rounded-full hover:bg-white transition-colors cursor-pointer"></div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-grow flex flex-col p-8">
+            <!-- Progress Steps -->
+            <div class="flex items-center justify-center space-x-12 mb-8">
+                <div id="progress-1" class="progress-circle w-10 h-10 flex items-center justify-center rounded-full border-2 border-gray-600 font-bold">1</div>
+                <div id="progress-2" class="progress-circle w-10 h-10 flex items-center justify-center rounded-full border-2 border-gray-600 font-bold">2</div>
+                <div id="progress-3" class="progress-circle w-10 h-10 flex items-center justify-center rounded-full border-2 border-gray-600 font-bold">3</div>
+            </div>
+
+            <!-- Steps Container -->
+            <div class="flex-grow relative">
+                <!-- Step 1: Welcome -->
+                <div id="step-1" class="step step-active w-full h-full flex flex-col items-center justify-center text-center">
+                    <h1 class="text-5xl font-extrabold mb-4">Welcome to Setup</h1>
+                    <p class="text-gray-400 max-w-md mb-8">Let's get everything configured so you can get started right away.</p>
+                    <button onclick="goToStep(2)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-transform transform hover:scale-105">Get Started</button>
+                </div>
+
+                <!-- Step 2: Username and Profile Picture -->
+                <div id="step-2" class="step step-inactive-right w-full h-full flex flex-col items-center justify-center text-center">
+                    <h1 class="text-4xl font-bold mb-2">Create Your Profile</h1>
+                    <p class="text-gray-400 mb-8">Choose a username and a profile picture.</p>
+                    
+                    <!-- Profile Picture Upload -->
+                    <div class="mb-8">
+                        <input type="file" id="pfp-input" class="hidden" accept="image/*" onchange="loadPfp(event)">
+                        <label for="pfp-input" id="pfp-preview-container" class="w-32 h-32 rounded-full flex items-center justify-center bg-[#1e1e1e] cursor-pointer overflow-hidden transition-all hover:border-blue-500">
+                             <img id="pfp-preview" src="" class="hidden w-full h-full object-cover">
+                             <svg id="pfp-placeholder" class="w-16 h-16 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                        </label>
+                    </div>
+
+                    <!-- Username Input -->
+                    <div class="w-full max-w-sm">
+                         <input type="text" id="username-input" placeholder="e.g., PixelMaster" class="w-full bg-[#1e1e1e] border-2 border-gray-600 rounded-lg py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors">
+                    </div>
+                    <button onclick="goToStep(3)" class="mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-transform transform hover:scale-105">Next Step</button>
+                </div>
+
+
+                <!-- Step 3: Link Accounts -->
+                <div id="step-3" class="step step-inactive-right w-full h-full flex flex-col items-center">
+                    <h1 class="text-4xl font-bold mb-2 text-center">Link Your Gaming Accounts</h1>
+                    <p class="text-gray-400 mb-6 text-center">Click an icon to link an account.</p>
+                    
+                    <div class="w-full max-w-xl mx-auto grid grid-cols-5 gap-5">
+                        <!-- Platform Icons Grid -->
+                        <div class="platform-box bg-[#1e1e1e] rounded-lg border-2 border-transparent hover:border-gray-600 transition-all" onclick="showContextMenu(event, this)">
+                            <div class="relative flex items-center justify-center h-24">
+                                <svg class="w-10 h-10 text-gray-300 fill-current" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Steam</title><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm3.233 15.25c-2.43.914-4.86-.914-4.86-.914l-2.057 4.114c0 0-1.643-1.029-2.057-1.843 0 0 2.271-4.971 2.271-6.17 0-1.2-1.843-4.757-1.843-4.757 1.029-.617 2.057-.206 2.057-.206L10.8 9.586s2.43-.914 4.86.914c2.43 1.829.617 4.543.617 4.543s1.814-2.714-.617-4.543zM16.18 12c0-1.238-1.008-2.246-2.246-2.246s-2.246 1.008-2.246 2.246 1.008 2.246 2.246 2.246 2.246-1.008 2.246-2.246z"/></svg>
+                                <svg class="checkmark absolute top-2 right-2 w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                        </div>
+                        <div class="platform-box bg-[#1e1e1e] rounded-lg border-2 border-transparent hover:border-gray-600 transition-all" onclick="showContextMenu(event, this)">
+                            <div class="relative flex items-center justify-center h-24">
+                                <svg class="w-10 h-10 text-gray-300 fill-current" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Xbox</title><path d="M11.998 0C5.37 0 0 5.37 0 11.998c0 6.628 5.37 11.996 11.998 11.996C18.628 23.994 24 18.626 24 11.998C24 5.37 18.628 0 11.998 0zm6.65 16.335c.48-.602.58-1.544.1-2.146l-4.43-5.334a.492.492 0 0 1 .02-.685l3.52-2.92c.502-.416.59-.115.22.4l-3.32 4.62-3.1-3.69c-.582-.69-.938-.82-1.46-.24-.52.58-.33 1.35.25 2.04l3.1 3.692-3.32 4.62c-.37.515-.282.815.22.4l3.522-2.92a.492.492 0 0 1 .685.02l4.43 5.334c.48.602 1.22.815 1.7-.1zm-10.27-9.45c1.47-1.758 4.22-4.52 6.08-5.388 1.86-.868 3.52.27 3.52 2.064 0 1.8-1.66 2.93-3.52 3.8-1.86.86-4.61 3.62-6.08 5.38-1.47 1.75-4.22 4.52-6.08 5.38-1.86.87-3.52-.27-3.52-2.06-1.E-4 -1.798 1.66-2.932 3.52-3.802 1.86-.867 4.61-3.62 6.08-5.374z"/></svg>
+                                <svg class="checkmark absolute top-2 right-2 w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                        </div>
+                        <div class="platform-box bg-[#1e1e1e] rounded-lg border-2 border-transparent hover:border-gray-600 transition-all" onclick="showContextMenu(event, this)">
+                             <div class="relative flex items-center justify-center h-24">
+                                <svg class="w-10 h-10 text-gray-300 fill-current" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>PlayStation</title><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zM8.64 18.36c.24.24.56.36.88.36s.64-.12.88-.36l3.52-3.52-1.76-1.76-3.52 3.52zm7.04-10.32c-.24-.24-.56-.36-.88-.36s-.64.12-.88.36l-3.52 3.52 1.76 1.76 3.52-3.52zm-3.52 8.48l-1.76 1.76-3.52-3.52c-.48-.48-.48-1.28 0-1.76l3.52-3.52 1.76 1.76-3.52 3.52 3.52 3.52zM12 10.28l-1.76-1.76-1.76 1.76 1.76 1.76 1.76-1.76zm8.8 6.56l-3.52 3.52c-.24.24-.56.36-.88.36s-.64-.12-.88-.36l-1.76-1.76 3.52-3.52 1.76 1.76c.48.48.48 1.28 0 1.76z"/></svg>
+                                <svg class="checkmark absolute top-2 right-2 w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                        </div>
+                        <div class="platform-box bg-[#1e1e1e] rounded-lg border-2 border-transparent hover:border-gray-600 transition-all" onclick="showContextMenu(event, this)">
+                            <div class="relative flex items-center justify-center h-24">
+                                <svg class="w-10 h-10 text-gray-300 fill-current" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Epic Games</title><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm-1.2 18H8.4V6h2.4v12zm6-12h-2.4v12H18c2.4 0 3.6-1.2 3.6-3.6V9.6c0-2.4-1.2-3.6-3.6-3.6z"/></svg>
+                                <svg class="checkmark absolute top-2 right-2 w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                        </div>
+                        <div class="platform-box bg-[#1e1e1e] rounded-lg border-2 border-transparent hover:border-gray-600 transition-all" onclick="showContextMenu(event, this)">
+                           <div class="relative flex items-center justify-center h-24">
+                                <svg class="w-10 h-10 text-gray-300 fill-current" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>GOG.com</title><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 2.4c5.28 0 9.6 4.32 9.6 9.6s-4.32 9.6-9.6 9.6-9.6-4.32-9.6-9.6S6.72 2.4 12 2.4zm-2.4 3.6v9.6h2.4V8.4h4.8v2.4h-4.8v4.8h4.8v2.4H9.6z"/></svg>
+                                <svg class="checkmark absolute top-2 right-2 w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                        </div>
+                        <div class="platform-box bg-[#1e1e1e] rounded-lg border-2 border-transparent hover:border-gray-600 transition-all" onclick="showContextMenu(event, this)">
+                           <div class="relative flex items-center justify-center h-24">
+                               <svg class="w-10 h-10 text-gray-300 fill-current" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Ubisoft</title><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 2.4c5.28 0 9.6 4.32 9.6 9.6s-4.32 9.6-9.6 9.6S2.4 17.28 2.4 12 6.72 2.4 12 2.4zm-2.4 3.6c-1.32 0-2.4 1.08-2.4 2.4v4.8c0 1.32 1.08 2.4 2.4 2.4h4.8c1.32 0 2.4-1.08 2.4-2.4V8.4c0-1.32-1.08-2.4-2.4-2.4H9.6zm0 2.4h4.8v4.8H9.6V8.4z"/></svg>
+                               <svg class="checkmark absolute top-2 right-2 w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                           </div>
+                        </div>
+                        <div class="platform-box bg-[#1e1e1e] rounded-lg border-2 border-transparent hover:border-gray-600 transition-all" onclick="showContextMenu(event, this)">
+                           <div class="relative flex items-center justify-center h-24">
+                                <svg class="w-10 h-10 text-gray-300 fill-current" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Electronic Arts</title><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm-2.4 6h4.8v2.4h-4.8V6zm0 4.8h4.8v2.4h-4.8v-2.4zm0 4.8h7.2v2.4H9.6v-2.4z"/></svg>
+                                <svg class="checkmark absolute top-2 right-2 w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                           </div>
+                        </div>
+                        <div class="platform-box bg-[#1e1e1e] rounded-lg border-2 border-transparent hover:border-gray-600 transition-all" onclick="showContextMenu(event, this)">
+                           <div class="relative flex items-center justify-center h-24">
+                                <svg class="w-10 h-10 text-gray-300 fill-current" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Battle.net</title><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 2.4c5.28 0 9.6 4.32 9.6 9.6s-4.32 9.6-9.6 9.6S2.4 17.28 2.4 12 6.72 2.4 12 2.4zm-4.8 3.6l4.8 2.4-2.4 4.8-4.8-2.4 2.4-4.8zm9.6 0l2.4 4.8-4.8 2.4-2.4-4.8 4.8-2.4zM9.6 13.2l2.4 1.2 2.4-1.2-1.2-2.4-1.2 2.4z"/></svg>
+                                <svg class="checkmark absolute top-2 right-2 w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                           </div>
+                        </div>
+                        <div class="platform-box bg-[#1e1e1e] rounded-lg border-2 border-transparent hover:border-gray-600 transition-all" onclick="showContextMenu(event, this)">
+                           <div class="relative flex items-center justify-center h-24">
+                                <svg class="w-10 h-10 text-gray-300 fill-current" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Humble Bundle</title><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm-4.8 6h9.6v2.4H7.2V6zm0 4.8h9.6v2.4H7.2v-2.4zm0 4.8h9.6v2.4H7.2v-2.4z"/></svg>
+                                <svg class="checkmark absolute top-2 right-2 w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                           </div>
+                        </div>
+                         <div class="platform-box bg-[#1e1e1e] rounded-lg border-2 border-transparent hover:border-gray-600 transition-all" onclick="showContextMenu(event, this)">
+                           <div class="relative flex items-center justify-center h-24">
+                                <svg class="w-10 h-10 text-gray-300 fill-current" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>itch.io</title><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 2.4c5.28 0 9.6 4.32 9.6 9.6S17.28 21.6 12 21.6 2.4 17.28 2.4 12 6.72 2.4 12 2.4zm-1.2 3.6v2.4h2.4V6h-2.4zm0 4.8v2.4h2.4v-2.4h-2.4zm0 4.8v2.4h2.4v-2.4h-2.4z"/></svg>
+                                <svg class="checkmark absolute top-2 right-2 w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                           </div>
+                        </div>
+                    </div>
+                     <button onclick="finishSetup()" class="mt-auto bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg transition-transform transform hover:scale-105">Done</button>
+                </div>
+                
+                 <!-- Step 4: Finish -->
+                <div id="step-4" class="step step-inactive-right w-full h-full flex flex-col items-center justify-center text-center">
+                    <svg class="w-24 h-24 text-green-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <h1 class="text-5xl font-extrabold mb-4">All Set!</h1>
+                    <p class="text-gray-400 max-w-md">Your configuration is complete. Enjoy the platform!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Custom Context Menu -->
+    <div id="context-menu" class="hidden bg-[#2a2a2a] rounded-md shadow-lg" onclick="event.stopPropagation()">
+        <button onclick="linkAccount()" class="w-full text-left text-white font-semibold py-2 px-4 hover:bg-blue-600 rounded-md transition-colors">Link Account</button>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        const totalSteps = 3;
+        let activePlatformBox = null;
+
+        function goToStep(stepNumber) {
+            if (stepNumber < 1 || stepNumber > totalSteps + 1) return;
+            const previousStep = currentStep;
+            const currentStepElem = document.getElementById(`step-${previousStep}`);
+            const nextStepElem = document.getElementById(`step-${stepNumber}`);
+            
+            if (previousStep < stepNumber) {
+                currentStepElem.classList.remove('step-active');
+                currentStepElem.classList.add('step-inactive-left');
+                nextStepElem.classList.remove('step-inactive-right');
+                nextStepElem.classList.add('step-active');
+            } else {
+                currentStepElem.classList.remove('step-active');
+                currentStepElem.classList.add('step-inactive-right');
+                nextStepElem.classList.remove('step-inactive-left');
+                nextStepElem.classList.add('step-active');
+            }
+            currentStep = stepNumber;
+            updateProgress();
+        }
+
+        function updateProgress() {
+            for (let i = 1; i <= totalSteps; i++) {
+                const progressCircle = document.getElementById(`progress-${i}`);
+                progressCircle.classList.toggle('active', i <= currentStep);
+            }
+        }
+        
+        function showContextMenu(event, platformElement) {
+            event.stopPropagation(); // Prevents the body's onclick from firing
+            const contextMenu = document.getElementById('context-menu');
+            
+            if(platformElement.classList.contains('completed')) {
+                hideContextMenu();
+                return;
+            }
+
+            activePlatformBox = platformElement;
+            
+            contextMenu.style.left = `${event.pageX}px`;
+            contextMenu.style.top = `${event.pageY}px`;
+            contextMenu.classList.remove('hidden');
+            setTimeout(() => contextMenu.classList.add('visible'), 0);
+        }
+
+        function hideContextMenu() {
+            const contextMenu = document.getElementById('context-menu');
+            contextMenu.classList.remove('visible');
+            setTimeout(() => contextMenu.classList.add('hidden'), 100); 
+        }
+
+        function linkAccount() {
+            if (activePlatformBox) {
+                activePlatformBox.classList.add('completed');
+            }
+            hideContextMenu();
+        }
+
+        // New function to handle profile picture preview
+        function loadPfp(event) {
+            const pfpPreview = document.getElementById('pfp-preview');
+            const pfpPlaceholder = document.getElementById('pfp-placeholder');
+            const pfpContainer = document.getElementById('pfp-preview-container');
+            
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    pfpPreview.src = e.target.result;
+                    pfpPreview.classList.remove('hidden');
+                    pfpPlaceholder.classList.add('hidden');
+                    pfpContainer.style.borderStyle = 'solid';
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function finishSetup() {
+            goToStep(4); 
+            document.querySelector('.flex.items-center.justify-center.space-x-12').style.display = 'none';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateProgress();
+        });
+    </script>
+
+</body>
+</html>

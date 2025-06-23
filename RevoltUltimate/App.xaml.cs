@@ -1,8 +1,8 @@
 ﻿using RevoltUltimate.API.Objects;
-using RevoltUltimate.Setup;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
+using RevoltUltimate.Desktop.Setup;
 
 namespace RevoltUltimate.Desktop
 {
@@ -102,7 +102,7 @@ namespace RevoltUltimate.Desktop
             this.MainWindow = mainWindow;
             mainWindow.Show();
         }
-
+            
         private void UpdateSettings()
         {
             if (File.Exists(SettingsFilePath))

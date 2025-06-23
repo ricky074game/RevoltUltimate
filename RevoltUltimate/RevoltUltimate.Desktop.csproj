@@ -9,13 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="NewFolder\**" />
-    <EmbeddedResource Remove="NewFolder\**" />
-    <None Remove="NewFolder\**" />
-    <Page Remove="NewFolder\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Remove="Images\bell.png" />
     <None Remove="Images\circle.gif" />
     <None Remove="Images\profilepic.png" />
@@ -28,7 +21,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RevoltUltimate.Notification\RevoltUltimate.Notification.csproj" />
-    <ProjectReference Include="..\RevoltUltimate.Setup\RevoltUltimate.Setup.csproj" />
     <ProjectReference Include="..\RevoltUltimate.Shared\RevoltUltimate.API.csproj" />
   </ItemGroup>
 
