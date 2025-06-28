@@ -9,7 +9,7 @@
         <ResourceDictionary>
             <BitmapImage x:Key="RoninLogoImage" UriSource="images/RoninLogo.png"/>
             <converters:ProgressToWidthConverter x:Key="ProgressToWidthConverter"/>
-
+            <converters:ProgressBorderBrushConverter x:Key="ProgressBorderBrushConverter"/>
             <Style TargetType="Window" x:Key="GlobalWindowStyle">
                 <Setter Property="WindowStyle" Value="None"/>
                 <Setter Property="AllowsTransparency" Value="True"/>
@@ -41,6 +41,26 @@
                         </Style>
                     </Setter.Value>
                 </Setter>
+            </Style>
+            <Style x:Key="ProgressBorderStyle" TargetType="Border">
+                <Setter Property="Background" Value="#333"/>
+                <Setter Property="CornerRadius" Value="5"/>
+                <Setter Property="BorderBrush" Value="#555"/>
+                <Setter Property="BorderThickness" Value="2"/>
+            </Style>
+            <Style x:Key="ProgressTextBlockStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="FontSize" Value="14"/>
+            </Style>
+            <Style x:Key="SetupButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="Black"/>
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="Padding" Value="10"/>
+            </Style>
+            <Style x:Key="ContextMenuButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="Gray"/>
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="Padding" Value="5"/>
             </Style>
             <Style x:Key="ThemedButtonStyle" TargetType="Button">
                 <Setter Property="Background" Value="Black"/>

@@ -1,8 +1,9 @@
 ﻿using RevoltUltimate.API.Objects;
+using RevoltUltimate.Desktop.Setup;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
-using RevoltUltimate.Desktop.Setup;
+using RevoltUltimate.API.Searcher;
 
 namespace RevoltUltimate.Desktop
 {
@@ -97,12 +98,35 @@ namespace RevoltUltimate.Desktop
                 setupWindow.Show();
                 return;
             }
+
+            SetupLinkers();
             this.ShutdownMode = ShutdownMode.OnMainWindowClose;
             MainWindow mainWindow = new MainWindow();
             this.MainWindow = mainWindow;
             mainWindow.Show();
         }
-            
+
+        private void SetupLinkers()
+        {
+            if (Settings == null || string.IsNullOrWhiteSpace(Settings.SteamApiKey) || string.IsNullOrWhiteSpace(Settings.SteamId))
+            {
+                MessageBox.Show("Steam API key or Steam ID is missing in the settings. Please configure them in the application settings.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Current.Shutdown();
+                return;
+            }
+
+            try
+            {
+                MainSteam.InitializeSharedInstance(Settings.SteamApiKey, Settings.SteamId);
+                System.Diagnostics.Debug.WriteLine("MainSteam has been successfully initialized.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to initialize MainSteam: {ex.Message}", "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Current.Shutdown();
+            }
+        }
+
         private void UpdateSettings()
         {
             if (File.Exists(SettingsFilePath))

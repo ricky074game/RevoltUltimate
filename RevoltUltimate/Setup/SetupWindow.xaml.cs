@@ -1,15 +1,15 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using RevoltUltimate.API.Objects;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
-using Microsoft.Win32;
-using RevoltUltimate.API.Objects;
-using System.Collections.Generic;
 
 namespace RevoltUltimate.Desktop.Setup
 {
@@ -21,7 +21,9 @@ namespace RevoltUltimate.Desktop.Setup
         private int currentStep = 1;
         private Border activePlatformBox = null;
         private const string SetupCompleteEventName = "RevoltUltimateSetupCompleteEvent";
-        private System.Threading.EventWaitHandle setupCompleteEvent;
+        private EventWaitHandle setupCompleteEvent;
+        private ApplicationSettings appSettings = new ApplicationSettings();
+
 
         public SetupWindow()
         {
@@ -30,16 +32,12 @@ namespace RevoltUltimate.Desktop.Setup
             Progress2.DataContext = new ProgressViewModel { IsActive = false };
             Progress3.DataContext = new ProgressViewModel { IsActive = false };
 
-            // Set up profile picture container click event
-            PfpPreviewContainer.MouseDown += (s, e) => SelectProfilePicture();
-            
+            Step2.PfpPreviewContainer.MouseDown += (s, e) => SelectProfilePicture();
+            Step3.Settings = this.appSettings;
+
             try
             {
-                // Try to open the event if it exists
-                if (System.Threading.EventWaitHandle.TryOpenExisting(SetupCompleteEventName, out setupCompleteEvent))
-                {
-                    setupCompleteEvent.Reset();
-                }
+                setupCompleteEvent = new EventWaitHandle(false, EventResetMode.ManualReset, SetupCompleteEventName);
             }
             catch (Exception ex)
             {
@@ -70,33 +68,41 @@ namespace RevoltUltimate.Desktop.Setup
 
         private void GoToStep3(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(UsernameInput.Text))
+            if (string.IsNullOrWhiteSpace(Step2.Username))
             {
                 MessageBox.Show("Please enter a username.", "Username Required", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
-            
+
             TransitionToStep(3);
         }
 
         private void TransitionToStep(int step)
         {
-            // Hide current step
             var currentStepElement = (UIElement)FindName($"Step{currentStep}");
             currentStepElement.Visibility = Visibility.Collapsed;
-            
-            // Show new step
+
             var newStepElement = (UIElement)FindName($"Step{step}");
             newStepElement.Visibility = Visibility.Visible;
-            
-            // Update progress circles
-            var previousProgress = (Border)FindName($"Progress{currentStep}");
-            var newProgress = (Border)FindName($"Progress{step}");
-            
-            ((ProgressViewModel)previousProgress.DataContext).IsActive = true;
-            ((ProgressViewModel)newProgress.DataContext).IsActive = true;
-            
-            // Update current step
+
+            if (currentStep < 4)
+            {
+                var previousProgress = (Border)FindName($"Progress{currentStep}");
+                if (previousProgress != null && previousProgress.DataContext is ProgressViewModel prevVm)
+                {
+                    prevVm.IsActive = false;
+                }
+            }
+
+            if (step < 4)
+            {
+                var newProgress = (Border)FindName($"Progress{step}");
+                if (newProgress != null && newProgress.DataContext is ProgressViewModel newVm)
+                {
+                    newVm.IsActive = true;
+                }
+            }
+
             currentStep = step;
         }
 
@@ -118,13 +124,7 @@ namespace RevoltUltimate.Desktop.Setup
                     bitmap.CacheOption = BitmapCacheOption.OnLoad;
                     bitmap.EndInit();
 
-                    PfpPreview.Source = bitmap;
-                    PfpPreview.Visibility = Visibility.Visible;
-                    PfpPlaceholder.Visibility = Visibility.Collapsed;
-                    
-                    // Update border style - WPF doesn't have BorderStyle, so we'll adjust BorderThickness and BorderBrush instead
-                    PfpPreviewContainer.BorderThickness = new Thickness(3);
-                    PfpPreviewContainer.BorderBrush = new SolidColorBrush(Color.FromRgb(59, 130, 246)); // #3b82f6
+                    Step2.ProfilePictureSource = bitmap;
                 }
                 catch (Exception ex)
                 {
@@ -136,14 +136,14 @@ namespace RevoltUltimate.Desktop.Setup
         private void ShowContextMenu(object sender, MouseButtonEventArgs e)
         {
             e.Handled = true;
-            
+
             // If the platform is already "linked", do nothing
             if (sender is Border platform)
             {
                 var platformViewModel = platform.DataContext as PlatformViewModel;
                 if (platformViewModel != null && platformViewModel.IsCompleted)
                     return;
-                
+
                 activePlatformBox = platform;
                 ContextMenu.IsOpen = true;
             }
@@ -158,7 +158,6 @@ namespace RevoltUltimate.Desktop.Setup
         {
             if (activePlatformBox != null)
             {
-                // If the platform doesn't have a view model, create one
                 if (activePlatformBox.DataContext == null)
                 {
                     activePlatformBox.DataContext = new PlatformViewModel { IsCompleted = true };
@@ -168,7 +167,7 @@ namespace RevoltUltimate.Desktop.Setup
                     model.IsCompleted = true;
                 }
             }
-            
+
             ContextMenu.IsOpen = false;
         }
 
@@ -176,37 +175,18 @@ namespace RevoltUltimate.Desktop.Setup
         {
             // Save user data
             SaveUserData();
-            
+
             // Show completion screen
             TransitionToStep(4);
-            
+
             // Signal setup completion
-            if (setupCompleteEvent != null)
-            {
-                setupCompleteEvent.Set();
-            }
-            else
-            {
-                try
-                {
-                    // Create the event if it doesn't exist
-                    setupCompleteEvent = new System.Threading.EventWaitHandle(
-                        false, 
-                        System.Threading.EventResetMode.ManualReset, 
-                        SetupCompleteEventName);
-                    
-                    setupCompleteEvent.Set();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Error signaling setup completion: {ex.Message}", "Setup Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-            
+            setupCompleteEvent?.Set();
+
             // Close the window after a delay
             var timer = new System.Windows.Threading.DispatcherTimer();
             timer.Interval = TimeSpan.FromSeconds(3);
-            timer.Tick += (s, args) => {
+            timer.Tick += (s, args) =>
+            {
                 timer.Stop();
                 this.Close();
             };
@@ -217,31 +197,33 @@ namespace RevoltUltimate.Desktop.Setup
         {
             var user = new User
             {
-                UserName = UsernameInput.Text,
+                UserName = Step2.Username,
                 Xp = 0,
                 Games = new List<Game>()
             };
-            
-            // Ensure directory exists
+
             var appDataFolder = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                 "RevoltUltimate");
-            
+
             if (!Directory.Exists(appDataFolder))
             {
                 Directory.CreateDirectory(appDataFolder);
             }
-            
-            // Save user data
+
             var userFilePath = Path.Combine(appDataFolder, "user.json");
-            var json = JsonSerializer.Serialize(user, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(userFilePath, json);
-            
-            // Save profile picture if selected
-            if (PfpPreview.Source != null)
+            var userJson = JsonSerializer.Serialize(user, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(userFilePath, userJson);
+
+            var settingsFilePath = Path.Combine(appDataFolder, "settings.json");
+            var settingsJson = JsonSerializer.Serialize(this.appSettings, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(settingsFilePath, settingsJson);
+
+
+            if (Step2.ProfilePictureSource != null)
             {
                 var profilePicPath = Path.Combine(appDataFolder, "profile.jpg");
-                SaveImageToFile(PfpPreview.Source as BitmapSource, profilePicPath);
+                SaveImageToFile(Step2.ProfilePictureSource as BitmapSource, profilePicPath);
             }
         }
 
@@ -262,7 +244,7 @@ namespace RevoltUltimate.Desktop.Setup
     public class ProgressViewModel : System.ComponentModel.INotifyPropertyChanged
     {
         private bool _isActive;
-        
+
         public bool IsActive
         {
             get => _isActive;
@@ -275,14 +257,14 @@ namespace RevoltUltimate.Desktop.Setup
                 }
             }
         }
-        
+
         public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
     }
 
     public class PlatformViewModel : System.ComponentModel.INotifyPropertyChanged
     {
         private bool _isCompleted;
-        
+
         public bool IsCompleted
         {
             get => _isCompleted;
@@ -295,7 +277,7 @@ namespace RevoltUltimate.Desktop.Setup
                 }
             }
         }
-        
+
         public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
     }
 }

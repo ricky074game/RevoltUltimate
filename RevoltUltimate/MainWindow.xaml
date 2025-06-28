@@ -4,6 +4,7 @@
         xmlns:converters="clr-namespace:RevoltUltimate.Desktop.Converters"
         xmlns:controls="clr-namespace:RevoltUltimate.Desktop.Controls"
         Title="Revolt Ultimate" Height="450" Width="800"
+        Icon="{StaticResource RoninLogoImageSource}"
         ResizeMode="CanMinimize">
     <Window.Resources>
         <ImageSource x:Key="RoninLogoImageSource">images/RoninLogo.png</ImageSource>
@@ -53,7 +54,6 @@
             </Style.Triggers>
         </Style>
 
-        <!-- Centralized ContextMenu Styles -->
         <Style x:Key="SharedContextMenuStyle" TargetType="ContextMenu">
             <Setter Property="OverridesDefaultStyle" Value="True"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
@@ -131,7 +131,6 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0" Margin="10,0,0,0">
-                    <!-- Assuming RoninLogoImage was a key for an ImageSource -->
                     <Image Source="{StaticResource RoninLogoImageSource}" Height="28" VerticalAlignment="Center"/>
                 </StackPanel>
                 <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Column="1">
@@ -181,7 +180,7 @@
                         <Ellipse
                             Margin="3">
                             <Ellipse.Fill>
-                                <ImageBrush ImageSource="images/ProfilePic.png" Stretch="Uniform"/>
+                                <ImageBrush ImageSource="{Binding ProfilePicturePath, FallbackValue='images/DefaultProfilePic.png', TargetNullValue='images/DefaultProfilePic.png'}" Stretch="Uniform"/>
                             </Ellipse.Fill>
                         </Ellipse>
                     </Grid>

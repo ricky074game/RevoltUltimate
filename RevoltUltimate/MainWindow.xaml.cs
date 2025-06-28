@@ -22,6 +22,7 @@ namespace RevoltUltimate.Desktop
         private readonly String _settingsFilePath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData), "RevoltUltimate", "settings.json"); // Added settings file path
 
         private TaskbarIcon _taskbarIcon;
+        public string ProfilePicturePath { get; set; }
         private bool _isExplicitlyClosing = false;
         private DispatcherTimer _backgroundTaskTimer;
         public NotificationViewModel NotificationViewModel { get; private set; }
@@ -29,6 +30,17 @@ namespace RevoltUltimate.Desktop
         public MainWindow()
         {
             InitializeComponent();
+            String profilePicturePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RevoltUltimate", "ProfilePic.png");
+            if (File.Exists(profilePicturePath))
+            {
+                ProfilePicturePath = profilePicturePath;
+            }
+            else
+            {
+                ProfilePicturePath = "Images/profilePic.png";
+            }
+
+            DataContext = this;
             NotificationViewModel = new NotificationViewModel();
             NotificationSystem.DataContext = NotificationViewModel;
             UpdateXpBar();
@@ -264,12 +276,6 @@ namespace RevoltUltimate.Desktop
 
         private async Task AddGamesToGrid()
         {
-
-            if (CurrentUser == null)
-            {
-                System.Diagnostics.Debug.WriteLine("CurrentUser is null. Cannot fetch games.");
-                return;
-            }
 
             if (!MainSteam.Instance.IsSteamApiReady)
             {

@@ -2,10 +2,6 @@
 using Steam.Models.SteamPlayer;
 using SteamWebAPI2.Interfaces;
 using SteamWebAPI2.Utilities;
-using System; // Required for Console.WriteLine, Exception, InvalidOperationException
-using System.Collections.Generic; // Required for List<T>
-using System.Linq; // Required for ToDictionary
-using System.Threading.Tasks; // Required for Task
 
 namespace RevoltUltimate.API.Searcher
 {
@@ -58,12 +54,12 @@ namespace RevoltUltimate.API.Searcher
         {
             this._apiKey = newApiKey;
             this._steamIdString = newSteamId;
-            InitializeInternal(); 
+            InitializeInternal();
         }
 
         private void InitializeInternal()
         {
-            _isReady = false; 
+            _isReady = false;
 
             if (!string.IsNullOrEmpty(_apiKey) &&
                 !string.IsNullOrEmpty(_steamIdString))
@@ -177,7 +173,7 @@ namespace RevoltUltimate.API.Searcher
                             schemaAch.Description,
                             schemaAch.Icon,
                             schemaAch.Hidden == 1,
-                            i, 
+                            i,
                             isUnlocked,
                             unlockTimestamp,
                             ""

@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Icons\steam.png" />
     <None Remove="Images\bell.png" />
     <None Remove="Images\circle.gif" />
     <None Remove="Images\profilepic.png" />
@@ -17,14 +18,17 @@
 
   <ItemGroup>
     <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="2.0.1" />
+    <PackageReference Include="SharpVectors" Version="1.8.4.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RevoltUltimate.Notification\RevoltUltimate.Notification.csproj" />
     <ProjectReference Include="..\RevoltUltimate.Shared\RevoltUltimate.API.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Icons\steam.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
     <Resource Include="Images\bell.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Resource>
