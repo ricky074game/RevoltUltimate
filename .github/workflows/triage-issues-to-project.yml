@@ -10,23 +10,18 @@ jobs:
   triage:
     runs-on: ubuntu-latest
     steps:
-      - name: Set label variables
-        id: labels
-        run: |
-          echo "labels=$(echo '${{ toJson(github.event.issue.labels) }}' | jq -r '.[].name' | tr '\n' ',' | sed 's/,$//')" >> $GITHUB_OUTPUT
-
       - name: Add BUG to Project in Bug section
-        if: contains(steps.labels.outputs.labels, 'BUG')
-        uses: github/add-to-project@v1
+        if: github.event.label.name == 'BUG'
+        uses: actions/add-to-project@main
         with:
           project-url: https://github.com/users/ricky074game/projects/2
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          field-Status: Bug
+          column-name: Bug
 
       - name: Add Feature Request to Project in Featured section
-        if: contains(steps.labels.outputs.labels, 'feature request')
-        uses: github/add-to-project@v1
+        if: github.event.label.name == 'feature request'
+        uses: actions/add-to-project@main
         with:
           project-url: https://github.com/users/ricky074game/projects/2
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          field-Status: Featured
+          column-name: Featured
