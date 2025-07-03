@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -108,7 +107,11 @@ namespace RevoltUltimate.Desktop.Setup.Steps
             switch (optionContent)
             {
                 case "Login with Steam on Web":
-                    Process.Start(new ProcessStartInfo("https://steamcommunity.com/login") { UseShellExecute = true });
+                    var steamLoginWindow = new SteamLogin
+                    {
+                        Owner = Application.Current.MainWindow
+                    };
+                    steamLoginWindow.Show();
                     break;
 
                 case "Login with Steam API":

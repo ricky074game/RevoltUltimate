@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="SteamKit2" Version="3.3.0" />
     <PackageReference Include="SteamWebAPI2" Version="4.4.1" />
     <PackageReference Include="Steamworks.NET" Version="2024.8.0" />
   </ItemGroup>

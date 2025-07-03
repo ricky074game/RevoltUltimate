@@ -1,9 +1,9 @@
-﻿using System.IO;
+﻿using Newtonsoft.Json;
+using System.IO;
 using System.Net.Http;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 
 namespace RevoltUltimate.API.Fetcher
 {
@@ -26,27 +26,21 @@ namespace RevoltUltimate.API.Fetcher
             Name = gameName;
             Directory.CreateDirectory(CacheDirectory); // Ensure cache directory exists
         }
+
         private static string LoadApiKey()
         {
             var assembly = Assembly.GetExecutingAssembly();
-            // The resource name is typically <AssemblyName>.<FolderPath>.<FileName>
-            // Assuming your assembly is RevoltUltimate.Shared and the file is in the Fetcher folder:
             string resourceName = "RevoltUltimate.Shared.Fetcher.SteamGridDbApiKey.txt";
 
             using (Stream? stream = assembly.GetManifestResourceStream(resourceName))
             {
                 if (stream == null)
                 {
-                    // Fallback for cases where the namespace might be slightly different or project structure influences the name.
-                    // This attempts a name based on the class's namespace.
                     string alternativeResourceName = typeof(GameBanner).Namespace + ".SteamGridDbApiKey.txt";
                     using (Stream? alternativeStream = assembly.GetManifestResourceStream(alternativeResourceName))
                     {
                         if (alternativeStream == null)
                         {
-                            // If still not found, you might need to list all resources to find the correct name:
-                            // string[] names = assembly.GetManifestResourceNames();
-                            // Console.WriteLine("Available resources: " + string.Join(", ", names));
                             throw new InvalidOperationException($"Could not find embedded resource. Tried: '{resourceName}' and '{alternativeResourceName}'. Ensure 'SteamGridDbApiKey.txt' exists in the Fetcher folder, its Build Action is 'Embedded Resource', and the resource name is correct.");
                         }
                         using (StreamReader reader = new StreamReader(alternativeStream))
@@ -78,7 +72,7 @@ namespace RevoltUltimate.API.Fetcher
                 try
                 {
                     var json = await File.ReadAllTextAsync(cacheFilePath);
-                    var cacheEntry = JsonSerializer.Deserialize<BannerCacheEntry>(json);
+                    var cacheEntry = JsonConvert.DeserializeObject<BannerCacheEntry>(json);
                     return cacheEntry;
                 }
                 catch (Exception ex)
@@ -100,7 +94,7 @@ namespace RevoltUltimate.API.Fetcher
             };
             try
             {
-                var json = JsonSerializer.Serialize(cacheEntry, new JsonSerializerOptions { WriteIndented = true });
+                var json = JsonConvert.SerializeObject(cacheEntry, Formatting.Indented);
                 await File.WriteAllTextAsync(cacheFilePath, json);
             }
             catch (Exception ex)
@@ -132,11 +126,11 @@ namespace RevoltUltimate.API.Fetcher
                 response.EnsureSuccessStatusCode();
 
                 var content = await response.Content.ReadAsStringAsync();
-                using var json = JsonDocument.Parse(content);
-                var data = json.RootElement.GetProperty("data");
-                if (data.GetArrayLength() > 0)
+                var json = JsonConvert.DeserializeObject<dynamic>(content);
+                var data = json.data;
+                if (data != null && data.Count > 0)
                 {
-                    var gameId = data[0].GetProperty("id").GetInt32();
+                    var gameId = data[0].id;
 
                     var gridRequest = new HttpRequestMessage(
                         HttpMethod.Get,
@@ -147,11 +141,11 @@ namespace RevoltUltimate.API.Fetcher
                     gridResponse.EnsureSuccessStatusCode();
 
                     var gridContent = await gridResponse.Content.ReadAsStringAsync();
-                    using var gridJson = JsonDocument.Parse(gridContent);
-                    var grids = gridJson.RootElement.GetProperty("data");
-                    if (grids.GetArrayLength() > 0)
+                    var gridJson = JsonConvert.DeserializeObject<dynamic>(gridContent);
+                    var grids = gridJson.data;
+                    if (grids != null && grids.Count > 0)
                     {
-                        string? bannerUrl = grids[0].GetProperty("url").GetString();
+                        string? bannerUrl = grids[0].url;
                         if (!string.IsNullOrEmpty(bannerUrl))
                         {
                             await SaveToCacheAsync(gameName, bannerUrl);

@@ -4,7 +4,7 @@
         xmlns:converters="clr-namespace:RevoltUltimate.Desktop.Converters"
         xmlns:controls="clr-namespace:RevoltUltimate.Desktop.Controls"
         Title="Revolt Ultimate" Height="450" Width="800"
-        Icon="{StaticResource RoninLogoImageSource}"
+        Icon="/Images/RoninLogo.png"
         ResizeMode="CanMinimize">
     <Window.Resources>
         <ImageSource x:Key="RoninLogoImageSource">images/RoninLogo.png</ImageSource>
@@ -174,13 +174,13 @@
                             Margin="0,0,2,0">
                     <Grid Width="40" Height="40" Margin="0,0,8,0" VerticalAlignment="Center">
                         <Ellipse
-                            Stroke="White"
-                            StrokeThickness="2"
-                            Fill="Black"/>
+        Stroke="White"
+        StrokeThickness="2"
+        Fill="Black"/>
                         <Ellipse
-                            Margin="3">
+        Margin="3">
                             <Ellipse.Fill>
-                                <ImageBrush ImageSource="{Binding ProfilePicturePath, FallbackValue='images/DefaultProfilePic.png', TargetNullValue='images/DefaultProfilePic.png'}" Stretch="Uniform"/>
+                                <ImageBrush ImageSource="{Binding ProfilePicturePath, FallbackValue='pack://application:,,,/Images/profilepic.png', TargetNullValue='pack://application:,,,/Images/profilepic.png'}" Stretch="Uniform"/>
                             </Ellipse.Fill>
                         </Ellipse>
                     </Grid>
@@ -209,7 +209,6 @@
                         </StackPanel>
                         <Button.ContextMenu>
                             <ContextMenu x:Name="HamburgerMenu" Style="{StaticResource SharedContextMenuStyle}">
-                                <!-- Apply item and separator styles through ContextMenu.Resources for items defined in XAML -->
                                 <ContextMenu.Resources>
                                     <Style TargetType="{x:Type MenuItem}" BasedOn="{StaticResource SharedMenuItemStyle}"/>
                                     <Style TargetType="{x:Type Separator}" BasedOn="{StaticResource SharedSeparatorStyle}"/>

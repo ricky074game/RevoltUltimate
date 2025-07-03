@@ -5,23 +5,23 @@ using SteamWebAPI2.Utilities;
 
 namespace RevoltUltimate.API.Searcher
 {
-    public class MainSteam
+    public class SteamWeb
     {
-        private static MainSteam _instance;
-        public static MainSteam Instance
+        private static SteamWeb _instance;
+        public static SteamWeb Instance
         {
             get
             {
                 if (_instance == null)
                 {
-                    throw new InvalidOperationException($"{nameof(MainSteam)} has not been initialized. Call {nameof(InitializeSharedInstance)} first.");
+                    throw new InvalidOperationException($"{nameof(SteamWeb)} has not been initialized. Call {nameof(InitializeSharedInstance)} first.");
                 }
                 return _instance;
             }
         }
 
-        private string _apiKey; // Store API key
-        private string _steamIdString; // Store Steam ID string
+        private string _apiKey;
+        private string _steamIdString;
 
         private SteamWebInterfaceFactory _webInterfaceFactory;
         private PlayerService _playerService;
@@ -30,11 +30,29 @@ namespace RevoltUltimate.API.Searcher
 
         private bool _isReady = false;
 
-        private MainSteam(string apiKey, string steamIdString)
+        private SteamWeb(string apiKey, string steamIdString)
         {
             this._apiKey = apiKey;
             this._steamIdString = steamIdString;
             InitializeInternal();
+        }
+        public async Task<List<Achievement>> GetAchievementsForGame(string gameName)
+        {
+            if (!IsSteamApiReady)
+            {
+                Console.WriteLine("Steam Web API not ready.");
+                return new List<Achievement>();
+            }
+
+            var ownedGamesResponse = await _playerService.GetOwnedGamesAsync(_steamId64, includeAppInfo: true, includeFreeGames: true);
+            var steamGame = ownedGamesResponse?.Data?.OwnedGames?.FirstOrDefault(g => g.Name.Equals(gameName, StringComparison.OrdinalIgnoreCase));
+
+            if (steamGame != null)
+            {
+                return await GetAchievementsForGameAsync((int)steamGame.AppId);
+            }
+
+            return new List<Achievement>();
         }
 
         public static void InitializeSharedInstance(string apiKey, string steamId)
@@ -47,7 +65,7 @@ namespace RevoltUltimate.API.Searcher
             {
                 Console.WriteLine($"{nameof(InitializeSharedInstance)}: Steam ID cannot be null or empty.");
             }
-            _instance = new MainSteam(apiKey, steamId);
+            _instance = new SteamWeb(apiKey, steamId);
         }
 
         public void Reinitialize(string newApiKey, string newSteamId)
@@ -107,7 +125,7 @@ namespace RevoltUltimate.API.Searcher
 
             try
             {
-                var ownedGamesResponse = await _playerService.GetOwnedGamesAsync(_steamId64, includeAppInfo: true, includeFreeGames: false);
+                var ownedGamesResponse = await _playerService.GetOwnedGamesAsync(_steamId64, includeAppInfo: true, includeFreeGames: true);
 
                 if (ownedGamesResponse?.Data?.OwnedGames != null)
                 {
@@ -119,7 +137,7 @@ namespace RevoltUltimate.API.Searcher
                             imageUrl = $"http://media.steampowered.com/steamcommunity/public/images/apps/{steamGameInfo.AppId}/{steamGameInfo.ImgIconUrl}.jpg";
                         }
                         var game = new Game(steamGameInfo.Name, "Steam", imageUrl, "", "Steam Web API");
-                        var achievements = await GetAchievementsForGameAsync(game, (int)steamGameInfo.AppId);
+                        var achievements = await GetAchievementsForGameAsync((int)steamGameInfo.AppId);
                         game.AddAchievements(achievements);
                         games.Add(game);
                     }
@@ -132,20 +150,26 @@ namespace RevoltUltimate.API.Searcher
             return games;
         }
 
-        private async Task<List<Achievement>?> GetAchievementsForGameAsync(Game game, int appId)
+        private async Task<List<Achievement>?> GetAchievementsForGameAsync(int appId)
         {
             if (!_isReady) return null;
 
             List<Achievement> achievements = new List<Achievement>();
-
             uint uAppId = (uint)appId;
 
             try
             {
-                var playerAchievementsResponse = await _steamUserStats.GetPlayerAchievementsAsync(uAppId, _steamId64);
                 var gameSchemaResponse = await _steamUserStats.GetSchemaForGameAsync(uAppId);
+                if (gameSchemaResponse?.Data?.AvailableGameStats?.Achievements == null ||
+                    !gameSchemaResponse.Data.AvailableGameStats.Achievements.Any())
+                {
+                    Console.WriteLine($"Game (AppID: {appId}) has no achievements.");
+                    return achievements;
+                }
 
-                if (playerAchievementsResponse?.Data?.Achievements != null && gameSchemaResponse?.Data?.AvailableGameStats?.Achievements != null)
+                var playerAchievementsResponse = await _steamUserStats.GetPlayerAchievementsAsync(uAppId, _steamId64);
+
+                if (playerAchievementsResponse?.Data?.Achievements != null)
                 {
                     var playerAchievements = playerAchievementsResponse.Data.Achievements.ToDictionary(a => a.APIName);
                     var schemaAchievements = gameSchemaResponse.Data.AvailableGameStats.Achievements;
@@ -158,7 +182,7 @@ namespace RevoltUltimate.API.Searcher
 
                         if (playerAchievements.TryGetValue(schemaAch.Name, out PlayerAchievementModel playerAch))
                         {
-                            isUnlocked = playerAch.Achieved == 1; // Correctly check if unlocked
+                            isUnlocked = playerAch.Achieved == 1;
                             if (isUnlocked && playerAch.UnlockTime != default(DateTime))
                             {
                                 if (playerAch.UnlockTime > DateTime.MinValue)
@@ -176,7 +200,7 @@ namespace RevoltUltimate.API.Searcher
                             i,
                             isUnlocked,
                             unlockTimestamp,
-                            ""
+                            1
                         );
                         achievements.Add(achievement);
                     }
@@ -184,7 +208,7 @@ namespace RevoltUltimate.API.Searcher
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Error fetching achievements for game {game.name} (AppID: {appId}) using SteamWebAPI2: {e.Message}");
+                Console.WriteLine($"Error fetching achievements for game (AppID: {appId}) using SteamWebAPI2: {e.Message}");
             }
             return achievements;
         }

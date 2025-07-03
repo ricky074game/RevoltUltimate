@@ -22,7 +22,13 @@ namespace RevoltUltimate.API.Objects
         }
 
         [JsonConstructor]
-        public Game(string Name, string Platform, string ImageUrl, string Description, string Method, List<Achievement> Achievements)
+        public Game(
+            string Name,
+            string Platform,
+            string ImageUrl,
+            string Description,
+            string Method,
+            List<Achievement> Achievements)
         {
             this.name = Name;
             this.platform = Platform;

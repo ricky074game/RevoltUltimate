@@ -1,0 +1,30 @@
+﻿<Window x:Class="RevoltUltimate.Desktop.Setup.Steam.DeviceConfirmationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Device Confirmation" Height="180" Width="400"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        WindowStartupLocation="CenterScreen">
+    <Border Background="#18181b" CornerRadius="10" BorderBrush="#27272a" BorderThickness="1">
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" 
+                       Text="Waiting for confirmation from your mobile app..." 
+                       Foreground="White" 
+                       FontSize="14" 
+                       TextWrapping="Wrap" 
+                       HorizontalAlignment="Center" 
+                       VerticalAlignment="Center"/>
+
+            <Button Grid.Row="1" 
+                    Content="Cancel" 
+                    Width="120" 
+                    Height="35"
+                    HorizontalAlignment="Center" 
+                    Click="CancelButton_Click"/>
+        </Grid>
+    </Border>
+</Window>

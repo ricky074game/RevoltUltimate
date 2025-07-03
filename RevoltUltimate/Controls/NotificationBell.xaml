@@ -10,8 +10,6 @@
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <Style x:Key="NotificationButtonStyle" TargetType="Button" BasedOn="{StaticResource TitleBarButtonStyle}">
-            <!-- BasedOn ensures it inherits from your existing TitleBarButtonStyle -->
-            <!-- Properties below are fallbacks or overrides if needed -->
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderThickness" Value="0"/>

@@ -75,7 +75,24 @@ namespace RevoltUltimate.Notification
         private void ShowAndAnimate()
         {
             AchievementNameRun.Text = $" - {_currentAchievement.name}";
-            AchievementScoreRun.Text = _currentAchievement.difficulty;
+            switch(_currentAchievement.difficulty)
+            {
+                case 0:
+                    AchievementScoreRun.Text = "Easy";
+                    break;
+                case 1:
+                    AchievementScoreRun.Text = "Medium";
+                    break;
+                case 2:
+                    AchievementScoreRun.Text = "Hard";
+                    break;
+                case 3:
+                    AchievementScoreRun.Text = "Very Hard";
+                    break;
+                default:
+                    AchievementScoreRun.Text = "Unknown";
+                    break;
+            }
 
             var workingArea = System.Windows.SystemParameters.WorkArea;
             this.Left = workingArea.Left + (workingArea.Width - this.Width) / 2;

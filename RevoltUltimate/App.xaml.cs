@@ -1,9 +1,9 @@
-﻿using RevoltUltimate.API.Objects;
+﻿using Newtonsoft.Json;
+using RevoltUltimate.API.Objects;
+using RevoltUltimate.API.Searcher;
 using RevoltUltimate.Desktop.Setup;
 using System.IO;
-using System.Text.Json;
 using System.Windows;
-using RevoltUltimate.API.Searcher;
 
 namespace RevoltUltimate.Desktop
 {
@@ -117,12 +117,12 @@ namespace RevoltUltimate.Desktop
 
             try
             {
-                MainSteam.InitializeSharedInstance(Settings.SteamApiKey, Settings.SteamId);
-                System.Diagnostics.Debug.WriteLine("MainSteam has been successfully initialized.");
+                SteamWeb.InitializeSharedInstance(Settings.SteamApiKey, Settings.SteamId);
+                System.Diagnostics.Debug.WriteLine("SteamWeb has been successfully initialized.");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to initialize MainSteam: {ex.Message}", "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Failed to initialize SteamWeb: {ex.Message}", "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 Current.Shutdown();
             }
         }
@@ -134,7 +134,7 @@ namespace RevoltUltimate.Desktop
                 try
                 {
                     string json = File.ReadAllText(SettingsFilePath);
-                    Settings = JsonSerializer.Deserialize<ApplicationSettings>(json);
+                    Settings = JsonConvert.DeserializeObject<ApplicationSettings>(json);
 
                     if (Settings != null && Settings.Version == CurrentSettingsVersion)
                     {
@@ -145,11 +145,6 @@ namespace RevoltUltimate.Desktop
                         Settings = null;
                     }
                 }
-                catch (JsonException ex)
-                {
-                    MessageBox.Show($"The settings file is corrupted. You can delete it (a new one will be generated on the next application start) or close the application to attempt a manual fix. For this session, default settings will be loaded.\nDetails: {ex.Message}", "Settings Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    Settings = null;
-                }
                 catch (System.Exception ex)
                 {
                     MessageBox.Show($"An unexpected error occurred while loading settings: {ex.Message}. Resetting to default settings.", "Settings Error", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -157,6 +152,7 @@ namespace RevoltUltimate.Desktop
                 }
             }
         }
+
         private void LoadUser()
         {
             if (File.Exists(UserFilePath))
@@ -164,11 +160,7 @@ namespace RevoltUltimate.Desktop
                 try
                 {
                     string json = File.ReadAllText(UserFilePath);
-                    CurrentUser = JsonSerializer.Deserialize<User>(json);
-                }
-                catch (JsonException)
-                {
-                    CurrentUser = null;
+                    CurrentUser = JsonConvert.DeserializeObject<User>(json);
                 }
                 catch (System.Exception ex)
                 {
@@ -190,7 +182,7 @@ namespace RevoltUltimate.Desktop
                 {
                     Directory.CreateDirectory(directoryPath);
                 }
-                string json = JsonSerializer.Serialize(user);
+                string json = JsonConvert.SerializeObject(user, Formatting.Indented);
                 File.WriteAllText(UserFilePath, json);
                 CurrentUser = user;
             }

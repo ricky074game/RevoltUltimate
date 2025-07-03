@@ -1,21 +1,14 @@
 ﻿using Microsoft.Win32;
+using Newtonsoft.Json;
 using RevoltUltimate.API.Objects;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text.Json;
-using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace RevoltUltimate.Desktop.Setup
 {
-    /// <summary>
-    /// Interaction logic for SetupWindow.xaml
-    /// </summary>
     public partial class SetupWindow : Window
     {
         private int currentStep = 1;
@@ -137,7 +130,6 @@ namespace RevoltUltimate.Desktop.Setup
         {
             e.Handled = true;
 
-            // If the platform is already "linked", do nothing
             if (sender is Border platform)
             {
                 var platformViewModel = platform.DataContext as PlatformViewModel;
@@ -212,13 +204,12 @@ namespace RevoltUltimate.Desktop.Setup
             }
 
             var userFilePath = Path.Combine(appDataFolder, "user.json");
-            var userJson = JsonSerializer.Serialize(user, new JsonSerializerOptions { WriteIndented = true });
+            var userJson = JsonConvert.SerializeObject(user, Formatting.Indented);
             File.WriteAllText(userFilePath, userJson);
 
             var settingsFilePath = Path.Combine(appDataFolder, "settings.json");
-            var settingsJson = JsonSerializer.Serialize(this.appSettings, new JsonSerializerOptions { WriteIndented = true });
+            var settingsJson = JsonConvert.SerializeObject(this.appSettings, Formatting.Indented);
             File.WriteAllText(settingsFilePath, settingsJson);
-
 
             if (Step2.ProfilePictureSource != null)
             {

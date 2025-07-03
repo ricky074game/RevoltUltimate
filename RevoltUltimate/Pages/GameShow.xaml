@@ -29,7 +29,8 @@
                                FontSize="12"
                                Foreground="#CCC"
                                Text="Achievements: 0/0, 0%"
-                               TextAlignment="Center"/>
+                               TextAlignment="Center"
+                               TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
         </Border>

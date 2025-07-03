@@ -10,9 +10,7 @@ namespace RevoltUltimate.Desktop.Setup
         public string DefaultValue { get; set; }
         public Func<string, bool> Validator { get; set; }
         public string ValidationErrorMessage { get; set; }
-
     }
-
     public partial class InputDialog : Window
     {
         private readonly List<InputFieldDefinition> fieldDefinitions;

@@ -19,8 +19,6 @@ namespace RevoltUltimate.Desktop.Pages
         {
             InitializeComponent();
             _game = game;
-            System.Diagnostics.Debug.WriteLine(game.name);
-            System.Diagnostics.Debug.WriteLine(game.achievements);
             _gameBannerFetcher = new GameBanner(_game.name);
             InitializeGameDataAsync();
             InitializeSparkleAnimation();

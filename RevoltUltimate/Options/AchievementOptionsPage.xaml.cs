@@ -110,7 +110,7 @@ namespace RevoltUltimate.Desktop.Options
                 Id: 999,
                 Unlocked: true,
                 DateTimeUnlocked: DateTime.Now.ToString("o"),
-                Difficulty: "Easy"
+                Difficulty: 0
             );
 
             AchievementWindow.ShowNotification(testAchievement, dllPath);

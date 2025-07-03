@@ -1,11 +1,13 @@
 ﻿using Hardcodet.Wpf.TaskbarNotification;
+using Newtonsoft.Json;
+using RevoltUltimate.API.Contracts;
 using RevoltUltimate.API.Notification;
 using RevoltUltimate.API.Objects;
 using RevoltUltimate.API.Searcher;
+using RevoltUltimate.API.Update;
 using RevoltUltimate.Desktop.Pages;
 using System.IO;
 using System.Net.Http;
-using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -30,7 +32,7 @@ namespace RevoltUltimate.Desktop
         public MainWindow()
         {
             InitializeComponent();
-            String profilePicturePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RevoltUltimate", "ProfilePic.png");
+            String profilePicturePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RevoltUltimate", "profile.jpg");
             if (File.Exists(profilePicturePath))
             {
                 ProfilePicturePath = profilePicturePath;
@@ -138,9 +140,45 @@ namespace RevoltUltimate.Desktop
             RunPeriodicBackgroundTask();
         }
 
-        public void RunPeriodicBackgroundTask()
+        public async void RunPeriodicBackgroundTask()
         {
             System.Diagnostics.Debug.WriteLine($"Background task running at: {DateTime.Now}");
+            string taskName = "Checking for new achievements";
+            NotificationViewModel.AddTask(taskName);
+
+            try
+            {
+                if (CurrentUser.Games != null)
+                {
+                    foreach (var game in CurrentUser.Games)
+                    {
+                        Update? updater = null;
+                        if (game.platform.Equals("Steam", StringComparison.OrdinalIgnoreCase))
+                        {
+                            updater = new SteamUpdate();
+                        }
+
+                        if (updater != null)
+                        {
+                            var newAchievements = await updater.CheckForNewAchievementsAsync(game);
+                            if (newAchievements.Any())
+                            {
+                                Save();
+                                foreach (var achievement in newAchievements)
+                                {
+                                    AchievementWindow.ShowNotification(achievement, App.Settings.CustomAnimationDllPath);
+                                }
+                            }
+                        }
+                    }
+                }
+                NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Success);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error checking for achievements: {ex.Message}");
+                NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed, ex.Message);
+            }
         }
 
         private void Save()
@@ -155,13 +193,13 @@ namespace RevoltUltimate.Desktop
 
                 if (CurrentUser != null)
                 {
-                    string userJson = JsonSerializer.Serialize(CurrentUser, new JsonSerializerOptions { WriteIndented = true });
+                    string userJson = JsonConvert.SerializeObject(CurrentUser, Formatting.Indented);
                     File.WriteAllText(_userFilePath, userJson);
                 }
 
                 if (App.Settings != null)
                 {
-                    string settingsJson = JsonSerializer.Serialize(App.Settings, new JsonSerializerOptions { WriteIndented = true });
+                    string settingsJson = JsonConvert.SerializeObject(App.Settings, Formatting.Indented);
                     File.WriteAllText(_settingsFilePath, settingsJson);
                 }
             }
@@ -169,7 +207,6 @@ namespace RevoltUltimate.Desktop
             {
                 System.Diagnostics.Debug.WriteLine($"Error saving data: {ex.Message}");
             }
-
         }
 
         private void UpdateXpBar()
@@ -271,13 +308,31 @@ namespace RevoltUltimate.Desktop
 
         private void Menu_About_Click(object sender, RoutedEventArgs e)
         {
-            System.Windows.MessageBox.Show("About clicked.");
+            AboutWindow aboutWindow = new AboutWindow
+            {
+                Owner = this
+            };
+            aboutWindow.ShowDialog();
         }
 
         private async Task AddGamesToGrid()
         {
+            GamesGrid.Children.Clear();
+            if (CurrentUser.Games != null && CurrentUser.Games.Any())
+            {
+                foreach (var game in CurrentUser.Games)
+                {
+                    var gameShowControl = new GameShow(game);
+                    GamesGrid.Children.Add(gameShowControl);
+                }
+                System.Diagnostics.Debug.WriteLine($"GamesGrid updated with local games. Total games in UI: {CurrentUser.Games.Count}");
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine("No local games found in CurrentUser.Games.");
+            }
 
-            if (!MainSteam.Instance.IsSteamApiReady)
+            if (!SteamWeb.Instance.IsSteamApiReady)
             {
                 System.Diagnostics.Debug.WriteLine("Steam Web API is not ready (check API key and Steam ID). Cannot fetch games.");
                 return;
@@ -287,7 +342,7 @@ namespace RevoltUltimate.Desktop
 
             try
             {
-                List<Game> steamGames = await MainSteam.Instance.Update();
+                List<Game> steamGames = await SteamWeb.Instance.Update();
 
                 if (CurrentUser.Games == null)
                 {
@@ -325,22 +380,17 @@ namespace RevoltUltimate.Desktop
                         var gameShowControl = new GameShow(game);
                         GamesGrid.Children.Add(gameShowControl);
                     }
-                    System.Diagnostics.Debug.WriteLine($"GamesGrid updated. Total games in UI: {CurrentUser.Games.Count}");
-                }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine("CurrentUser.Games is null after processing. No games to show.");
                 }
             }
-            catch (HttpRequestException httpEx) // Catch specific HttpRequestException
+            catch (HttpRequestException httpEx)
             {
                 System.Diagnostics.Debug.WriteLine($"Error fetching games from Steam API: {httpEx.Message}");
-                NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed, httpEx.Message); // Update notification with error
+                NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed, httpEx.Message);
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error in Grid: {ex.Message}");
-                NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed, "An unexpected error occurred."); // Generic error for other exceptions
+                NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed, "An unexpected error occurred.");
             }
         }
 
