@@ -15,7 +15,7 @@ jobs:
         uses: actions/add-to-project@main
         with:
           project-url: https://github.com/users/ricky074game/projects/2
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.TOKEN_GITHUB_PROJECT }}
           column-name: Bug
 
       - name: Add Feature Request to Project in Featured section
@@ -23,5 +23,5 @@ jobs:
         uses: actions/add-to-project@main
         with:
           project-url: https://github.com/users/ricky074game/projects/2
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.TOKEN_GITHUB_PROJECT }}
           column-name: Featured
