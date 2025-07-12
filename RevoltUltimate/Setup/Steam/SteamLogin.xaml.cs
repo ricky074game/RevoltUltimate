@@ -12,18 +12,20 @@ namespace RevoltUltimate.Desktop.Setup
         public string Username { get; private set; }
         public string Password { get; private set; }
         private readonly SteamLocal _steamLocal;
-        private Window _confirmationWindow;
+        private SigningInWindow? _signingInWindow;
+        private Window? _confirmationWindow;
 
         public SteamLogin()
         {
             InitializeComponent();
             var wpfAuthenticator = new WpfAuthenticator(this.Dispatcher);
             wpfAuthenticator.OnDeviceConfirmationRequired += ShowConfirmationWindow;
-            _steamLocal = new SteamLocal(wpfAuthenticator);
+            _steamLocal = new SteamLocal();
+            _steamLocal.SetAuthenticator(wpfAuthenticator);
         }
         private void ShowConfirmationWindow(Window window)
         {
-            _confirmationWindow = window;
+            _confirmationWindow = new DeviceConfirmationWindow();
             _confirmationWindow.Owner = this;
             _confirmationWindow.Show();
         }
@@ -35,7 +37,7 @@ namespace RevoltUltimate.Desktop.Setup
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
-            Application.Current.Shutdown();
+            this.Close();
         }
 
         private async void SignInButton_OnClick(object sender, RoutedEventArgs e)
@@ -62,8 +64,7 @@ namespace RevoltUltimate.Desktop.Setup
                 if (result == EResult.OK)
                 {
                     MessageBox.Show("Login successful!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                    this.DialogResult = true;
-                    this.Close(); // This will also close owned windows
+                    this.Close();
                 }
                 else
                 {
@@ -78,7 +79,6 @@ namespace RevoltUltimate.Desktop.Setup
             }
             finally
             {
-                // Ensure all helper windows are closed
                 signingInWindow.Close();
                 _confirmationWindow?.Close();
             }

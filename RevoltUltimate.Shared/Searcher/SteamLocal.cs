@@ -1,19 +1,23 @@
-﻿using RevoltUltimate.API.Objects;
+﻿using RevoltUltimate.API.Accounts;
+using RevoltUltimate.API.Contracts;
+using RevoltUltimate.API.Objects;
 using SteamKit2;
 using SteamKit2.Authentication;
 using System.IO;
 using System.Windows.Threading;
-using RevoltUltimate.API.Contracts;
+using static SteamKit2.Internal.CMsgRemoteClientBroadcastStatus;
 
 namespace RevoltUltimate.API.Searcher
 {
     public class SteamLocal
     {
+        private static SteamLocal _instance;
+        public static SteamLocal Instance => _instance ??= new SteamLocal();
         private readonly SteamClient _steamClient;
         private readonly CallbackManager _callbackManager;
         private readonly SteamUser _steamUser;
         private readonly SteamApps _steamApps;
-        private readonly IAuthenticator _authenticator;
+        private IAuthenticator _authenticator;
 
         private bool _isRunning;
         private string _username;
@@ -23,9 +27,8 @@ namespace RevoltUltimate.API.Searcher
         private readonly List<uint> _ownedAppIds = new List<uint>();
         private TaskCompletionSource<EResult> _loginTcs;
 
-        public SteamLocal(IAuthenticator authenticator)
+        public SteamLocal()
         {
-            _authenticator = authenticator;
             _steamClient = new SteamClient();
             _callbackManager = new CallbackManager(_steamClient);
 
@@ -38,14 +41,18 @@ namespace RevoltUltimate.API.Searcher
             _callbackManager.Subscribe<SteamUser.LoggedOffCallback>(OnLoggedOff);
             _callbackManager.Subscribe<SteamApps.LicenseListCallback>(OnLicenseList);
         }
+        public void SetAuthenticator(IAuthenticator authenticator)
+        {
+            _authenticator = authenticator ?? throw new ArgumentNullException(nameof(authenticator));
+        }
 
-        public Task<EResult> Login(string username, string password)
+        public Task<EResult> Login(string username, string? password = null)
         {
             _username = username;
-            _password = password;
+            _password = password ?? AccountManager.GetDecryptedPassword(username);
             _loginTcs = new TaskCompletionSource<EResult>();
 
-            _guardData = LoadGuardData(_username);
+            _guardData = AccountManager.GetDecryptedGuardData(_username);
 
             _isRunning = true;
             _steamClient.Connect();
@@ -60,7 +67,6 @@ namespace RevoltUltimate.API.Searcher
 
             return _loginTcs.Task;
         }
-
         public void Disconnect()
         {
             _isRunning = false;
@@ -88,7 +94,7 @@ namespace RevoltUltimate.API.Searcher
                 if (pollResponse.NewGuardData != null)
                 {
                     _guardData = pollResponse.NewGuardData;
-                    SaveGuardData(_username, _guardData);
+                    AccountManager.SaveAccount(_username, _guardData, _password);
                 }
 
                 _steamUser.LogOn(new SteamUser.LogOnDetails
@@ -132,15 +138,7 @@ namespace RevoltUltimate.API.Searcher
             _ownedAppIds.AddRange(callback.LicenseList.Select(lic => lic.PackageID));
         }
 
-        private string GetGuardDataPath(string user) => Path.Combine(AppContext.BaseDirectory, $"{user}.guard.txt");
-        private void SaveGuardData(string user, string data) => File.WriteAllText(GetGuardDataPath(user), data);
-        private string LoadGuardData(string user)
-        {
-            var path = GetGuardDataPath(user);
-            return File.Exists(path) ? File.ReadAllText(path) : null;
-        }
 
-        // This method remains the same as before
         public async Task<List<Game>> GetOwnedGamesAsync()
         {
             if (!_steamClient.IsConnected || !_ownedAppIds.Any())

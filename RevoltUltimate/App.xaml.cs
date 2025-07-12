@@ -4,6 +4,8 @@ using RevoltUltimate.API.Searcher;
 using RevoltUltimate.Desktop.Setup;
 using System.IO;
 using System.Windows;
+using RevoltUltimate.API.Accounts;
+using RevoltUltimate.Desktop.Setup.Steam;
 
 namespace RevoltUltimate.Desktop
 {
@@ -57,24 +59,15 @@ namespace RevoltUltimate.Desktop
                 }
 
                 bool signaled = false;
-                if (setupCompleteEvent != null)
+                await Task.Run(() =>
                 {
-                    await Task.Run(() =>
-                    {
-                        signaled = setupCompleteEvent.WaitOne(TimeSpan.FromMinutes(5));
-                    });
-                    setupCompleteEvent.Close();
+                    signaled = setupCompleteEvent.WaitOne(TimeSpan.FromMinutes(5));
+                });
+                setupCompleteEvent.Close();
 
-                    if (!signaled)
-                    {
-                        MessageBox.Show("Setup process did not complete in time. Application will exit.", "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        Current.Shutdown();
-                        return;
-                    }
-                }
-                else
+                if (!signaled)
                 {
-                    MessageBox.Show("Setup completion event was not properly initialized. Application will exit.", "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("Setup process did not complete in time. Application will exit.", "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     Current.Shutdown();
                     return;
                 }
@@ -106,23 +99,41 @@ namespace RevoltUltimate.Desktop
             mainWindow.Show();
         }
 
-        private void SetupLinkers()
+        private async void SetupLinkers()
         {
-            if (Settings == null || string.IsNullOrWhiteSpace(Settings.SteamApiKey) || string.IsNullOrWhiteSpace(Settings.SteamId))
+
+            if (Settings != null || !string.IsNullOrEmpty(Settings.SteamApiKey) ||
+                !string.IsNullOrWhiteSpace(Settings.SteamId))
             {
-                MessageBox.Show("Steam API key or Steam ID is missing in the settings. Please configure them in the application settings.", "Configuration Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                Current.Shutdown();
-                return;
+                try
+                {
+                    SteamWeb.InitializeSharedInstance(Settings.SteamApiKey, Settings.SteamId);
+                    System.Diagnostics.Debug.WriteLine("SteamWeb has been successfully initialized.");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to initialize SteamWeb: {ex.Message}", "Initialization Error",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    Current.Shutdown();
+                }
             }
 
-            try
+            var savedAccount = AccountManager.GetSavedAccounts().FirstOrDefault();
+            if (savedAccount == null) return;
+            var authenticator = new WpfAuthenticator(this.Dispatcher);
+            SteamLocal.Instance.SetAuthenticator(authenticator);
+
+            var result = await SteamLocal.Instance.Login(savedAccount.Username);
+
+            if (result == SteamKit2.EResult.OK)
             {
-                SteamWeb.InitializeSharedInstance(Settings.SteamApiKey, Settings.SteamId);
-                System.Diagnostics.Debug.WriteLine("SteamWeb has been successfully initialized.");
+                System.Diagnostics.Debug.WriteLine($"Successfully logged in as {savedAccount.Username}.");
             }
-            catch (Exception ex)
+            else
             {
-                MessageBox.Show($"Failed to initialize SteamWeb: {ex.Message}", "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                //Login failed
+                MessageBox.Show($"Failed to log in as {savedAccount.Username}. Result: {result}", "Login Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
                 Current.Shutdown();
             }
         }

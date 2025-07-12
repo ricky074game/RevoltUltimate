@@ -148,26 +148,23 @@ namespace RevoltUltimate.Desktop
 
             try
             {
-                if (CurrentUser.Games != null)
+                foreach (var game in CurrentUser.Games)
                 {
-                    foreach (var game in CurrentUser.Games)
+                    Update? updater = null;
+                    if (game.platform.Equals("Steam", StringComparison.OrdinalIgnoreCase))
                     {
-                        Update? updater = null;
-                        if (game.platform.Equals("Steam", StringComparison.OrdinalIgnoreCase))
-                        {
-                            updater = new SteamUpdate();
-                        }
+                        updater = new SteamUpdate();
+                    }
 
-                        if (updater != null)
+                    if (updater != null)
+                    {
+                        var newAchievements = await updater.CheckForNewAchievementsAsync(game);
+                        if (newAchievements.Any())
                         {
-                            var newAchievements = await updater.CheckForNewAchievementsAsync(game);
-                            if (newAchievements.Any())
+                            Save();
+                            foreach (var achievement in newAchievements)
                             {
-                                Save();
-                                foreach (var achievement in newAchievements)
-                                {
-                                    AchievementWindow.ShowNotification(achievement, App.Settings.CustomAnimationDllPath);
-                                }
+                                AchievementWindow.ShowNotification(achievement, App.Settings.CustomAnimationDllPath);
                             }
                         }
                     }

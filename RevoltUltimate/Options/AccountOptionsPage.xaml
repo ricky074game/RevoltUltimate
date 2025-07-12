@@ -1,0 +1,50 @@
+﻿<UserControl x:Class="RevoltUltimate.Desktop.Options.AccountOptionsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:RevoltUltimate.Desktop.Options"
+             mc:Ignorable="d"
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Margin" Value="10,0,0,0"/>
+            <Setter Property="Width" Value="300"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Width" Value="120"/>
+            <Setter Property="Margin" Value="10"/>
+        </Style>
+    </UserControl.Resources>
+    <Grid Margin="20">
+        <StackPanel>
+            <GroupBox Header="Steam Web API" Foreground="White" Padding="10">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="5">
+                        <TextBlock Text="API Key:"/>
+                        <TextBox x:Name="ApiKeyTextBox"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="5">
+                        <TextBlock Text="Steam ID:"/>
+                        <TextBox x:Name="SteamIdTextBox"/>
+                    </StackPanel>
+                    <Button Content="Save API Settings" Click="SaveApiSettings_Click"/>
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Header="Steam Client Account" Foreground="White" Padding="10" Margin="0,20,0,0">
+                <StackPanel>
+                    <TextBlock x:Name="SteamAccountStatusText" Text="No account is linked." Margin="5"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="AddAccountButton" Content="Add Account" Click="AddAccount_Click"/>
+                        <Button x:Name="RemoveAccountButton" Content="Remove Account" Click="RemoveAccount_Click" Visibility="Collapsed"/>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+        </StackPanel>
+    </Grid>
+</UserControl>

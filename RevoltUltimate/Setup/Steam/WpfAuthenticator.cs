@@ -1,5 +1,5 @@
-﻿using System.Windows;
-using SteamKit2.Authentication;
+﻿using SteamKit2.Authentication;
+using System.Windows;
 using System.Windows.Threading;
 
 namespace RevoltUltimate.Desktop.Setup.Steam
@@ -20,7 +20,6 @@ namespace RevoltUltimate.Desktop.Setup.Steam
         {
             _dispatcher.Invoke(() =>
             {
-                // Create the window but let the UI layer manage showing and closing it.
                 var confirmationWindow = new DeviceConfirmationWindow();
                 OnDeviceConfirmationRequired?.Invoke(confirmationWindow);
             });

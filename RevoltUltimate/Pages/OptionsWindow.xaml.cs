@@ -20,6 +20,7 @@ namespace RevoltUltimate.Desktop.Pages
             CategoryListBox.Items.Add(new OptionsCategory { Name = "General", Content = new GeneralOptionsPage() });
             CategoryListBox.Items.Add(new OptionsCategory { Name = "User Profile", Content = new UserProfileOptionsPage() });
             CategoryListBox.Items.Add(new OptionsCategory { Name = "Achievements", Content = new AchievementOptionsPage() });
+            CategoryListBox.Items.Add(new OptionsCategory { Name = "Accounts", Content = new AccountOptionsPage() });
         }
         private void CategoryListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
