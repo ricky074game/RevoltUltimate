@@ -4,24 +4,14 @@ on:
   issues:
     types:
       - opened
-      - labeled
 
 jobs:
   triage:
     runs-on: ubuntu-latest
     steps:
-      - name: Add BUG to Project in Bug section
-        if: github.event.label.name == 'BUG'
+      - name: Add New Issue to Project in "Not Looked At" section
         uses: actions/add-to-project@main
         with:
           project-url: https://github.com/users/ricky074game/projects/2
           github-token: ${{ secrets.TOKEN_GITHUB_PROJECT }}
-          column-name: Bug
-
-      - name: Add Feature Request to Project in Featured section
-        if: github.event.label.name == 'feature request'
-        uses: actions/add-to-project@main
-        with:
-          project-url: https://github.com/users/ricky074game/projects/2
-          github-token: ${{ secrets.TOKEN_GITHUB_PROJECT }}
-          column-name: Featured
+          column-name: Not Looked At
