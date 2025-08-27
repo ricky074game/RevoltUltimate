@@ -17,7 +17,6 @@
                 <!-- Title Bar -->
                 <Border Grid.Row="0" Background="#27272a" CornerRadius="10,10,0,0" MouseDown="TitleBar_MouseDown">
                     <Grid Height="40">
-                        <TextBlock Text="Input Dialog" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="15,0,0,0" Foreground="White" FontSize="14"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <TextBlock Text="&#xE949;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="10" Foreground="White" MouseDown="Minimize_Click"/>
                             <TextBlock Text="&#xE8BB;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="10" Foreground="White" MouseDown="CloseButton_Click"/>

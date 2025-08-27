@@ -221,10 +221,39 @@ namespace RevoltUltimate.Desktop
             }
             else
             {
-                MessageBox.Show($"Failed to log in as {savedAccount.Username}. Result: {result}", "Login Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                //Login failed
+                MessageBox.Show($"Failed to log in as {savedAccount.Username}. Result: {result}", "Login Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
                 Current.Shutdown();
             }
         }
+
+        private void UpdateSettings()
+        {
+            if (File.Exists(SettingsFilePath))
+            {
+                try
+                {
+                    string json = File.ReadAllText(SettingsFilePath);
+                    Settings = JsonConvert.DeserializeObject<ApplicationSettings>(json);
+
+                    if (Settings != null && Settings.Version == CurrentSettingsVersion)
+                    {
+                    }
+                    else if (Settings != null && Settings.Version != CurrentSettingsVersion)
+                    {
+                        MessageBox.Show($"Settings file is an outdated version ({Settings.Version}). Resetting to default settings for version {CurrentSettingsVersion}.", "Settings Update", MessageBoxButton.OK, MessageBoxImage.Information);
+                        Settings = null;
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    MessageBox.Show($"An unexpected error occurred while loading settings: {ex.Message}. Resetting to default settings.", "Settings Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Settings = null;
+                }
+            }
+        }
+
         private void LoadUser()
         {
             if (File.Exists(UserFilePath))
