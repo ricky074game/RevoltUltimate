@@ -8,7 +8,6 @@ namespace RevoltUltimate.Desktop.Setup.Steam
     {
         private readonly Dispatcher _dispatcher;
 
-        // Event to notify the UI that a confirmation window needs to be shown
         public event Action<Window> OnDeviceConfirmationRequired;
 
         public WpfAuthenticator(Dispatcher dispatcher)
@@ -24,7 +23,6 @@ namespace RevoltUltimate.Desktop.Setup.Steam
                 OnDeviceConfirmationRequired?.Invoke(confirmationWindow);
             });
 
-            // Return true to tell SteamKit to start polling for the user's mobile confirmation.
             return Task.FromResult(true);
         }
 

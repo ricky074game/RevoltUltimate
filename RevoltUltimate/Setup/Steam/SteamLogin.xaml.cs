@@ -20,7 +20,7 @@ namespace RevoltUltimate.Desktop.Setup
             InitializeComponent();
             var wpfAuthenticator = new WpfAuthenticator(this.Dispatcher);
             wpfAuthenticator.OnDeviceConfirmationRequired += ShowConfirmationWindow;
-            _steamLocal = new SteamLocal();
+            _steamLocal = SteamLocal.Instance;
             _steamLocal.SetAuthenticator(wpfAuthenticator);
         }
         private void ShowConfirmationWindow(Window window)

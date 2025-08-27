@@ -314,80 +314,106 @@ namespace RevoltUltimate.Desktop
 
         private async Task AddGamesToGrid()
         {
-            GamesGrid.Children.Clear();
+            var allGames = new List<Game>();
+
             if (CurrentUser.Games != null && CurrentUser.Games.Any())
             {
-                foreach (var game in CurrentUser.Games)
-                {
-                    var gameShowControl = new GameShow(game);
-                    GamesGrid.Children.Add(gameShowControl);
-                }
-                System.Diagnostics.Debug.WriteLine($"GamesGrid updated with local games. Total games in UI: {CurrentUser.Games.Count}");
+                allGames.AddRange(CurrentUser.Games);
+                System.Diagnostics.Debug.WriteLine($"Loaded {CurrentUser.Games.Count} local games.");
             }
             else
             {
                 System.Diagnostics.Debug.WriteLine("No local games found in CurrentUser.Games.");
             }
 
-            if (!SteamWeb.Instance.IsSteamApiReady)
+            if (SteamWeb.Instance.IsSteamApiReady)
             {
-                System.Diagnostics.Debug.WriteLine("Steam Web API is not ready (check API key and Steam ID). Cannot fetch games.");
-                return;
-            }
-            string taskName = "Fetching games from steamapi";
-            NotificationViewModel.AddTask(taskName);
+                string taskName = "Fetching games from Steam API";
+                NotificationViewModel.AddTask(taskName);
 
-            try
-            {
-                List<Game> steamGames = await SteamWeb.Instance.Update();
-
-                if (CurrentUser.Games == null)
+                try
                 {
-                    CurrentUser.Games = new List<Game>();
-                }
-
-                bool newGamesAdded = false;
-                if (steamGames != null)
-                {
-                    foreach (var steamGame in steamGames)
+                    List<Game> steamGames = await SteamWeb.Instance.Update();
+                    if (steamGames != null)
                     {
-                        bool gameExists = CurrentUser.Games.Any(g =>
-                            g.name.Equals(steamGame.name, StringComparison.OrdinalIgnoreCase) &&
-                            g.platform.Equals(steamGame.platform, StringComparison.OrdinalIgnoreCase));
-
-                        if (!gameExists)
+                        foreach (var steamGame in steamGames)
                         {
-                            CurrentUser.Games.Add(steamGame);
-                            newGamesAdded = true;
-                            System.Diagnostics.Debug.WriteLine($"Added game to CurrentUser.Games: {steamGame.name} ({steamGame.platform})");
+                            bool gameExists = allGames.Any(g =>
+                                g.name.Equals(steamGame.name, StringComparison.OrdinalIgnoreCase) &&
+                                g.platform.Equals(steamGame.platform, StringComparison.OrdinalIgnoreCase));
+
+                            if (!gameExists)
+                            {
+                                allGames.Add(steamGame);
+                                System.Diagnostics.Debug.WriteLine($"Added game from Steam API: {steamGame.name} ({steamGame.platform})");
+                            }
                         }
                     }
+                    NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Success);
                 }
-                NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Success);
-                if (newGamesAdded)
+                catch (HttpRequestException httpEx)
                 {
-                    Save();
+                    System.Diagnostics.Debug.WriteLine($"Error fetching games from Steam API: {httpEx.Message}");
+                    NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed, httpEx.Message);
                 }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error in Steam API fetch: {ex.Message}");
+                    NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed, "An unexpected error occurred.");
+                }
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine("Steam Web API is not ready (check API key and Steam ID).");
+            }
 
-                GamesGrid.Children.Clear();
-                if (CurrentUser.Games != null)
+            if (SteamLocal.Instance != null)
+            {
+                string taskName = "Fetching games from Steam Local";
+                NotificationViewModel.AddTask(taskName);
+
+                try
                 {
-                    foreach (var game in CurrentUser.Games)
+                    List<Game> localSteamGames = await SteamLocal.Instance.GetOwnedGamesAsync();
+                    if (localSteamGames != null)
                     {
-                        var gameShowControl = new GameShow(game);
-                        GamesGrid.Children.Add(gameShowControl);
+                        foreach (var localSteamGame in localSteamGames)
+                        {
+                            bool gameExists = allGames.Any(g =>
+                                g.name.Equals(localSteamGame.name, StringComparison.OrdinalIgnoreCase) &&
+                                g.platform.Equals(localSteamGame.platform, StringComparison.OrdinalIgnoreCase));
+
+                            if (!gameExists)
+                            {
+                                allGames.Add(localSteamGame);
+                                System.Diagnostics.Debug.WriteLine($"Added game from Steam Local: {localSteamGame.name} ({localSteamGame.platform})");
+                            }
+                        }
                     }
+                    NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Success);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error fetching games from Steam Local: {ex.Message}");
+                    NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed, "An unexpected error occurred.");
                 }
             }
-            catch (HttpRequestException httpEx)
+
+            AddSelectGamesToGrid(allGames);
+        }
+
+        private void AddSelectGamesToGrid(List<Game> games)
+        {
+            if (!games.Any())
             {
-                System.Diagnostics.Debug.WriteLine($"Error fetching games from Steam API: {httpEx.Message}");
-                NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed, httpEx.Message);
+                System.Diagnostics.Debug.WriteLine("No games to add to the grid.");
+                return;
             }
-            catch (Exception ex)
+            GamesGrid.Children.Clear();
+            foreach (var game in games)
             {
-                System.Diagnostics.Debug.WriteLine($"Error in Grid: {ex.Message}");
-                NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed, "An unexpected error occurred.");
+                var gameShowControl = new GameShow(game);
+                GamesGrid.Children.Add(gameShowControl);
             }
         }
 
