@@ -1,11 +1,7 @@
 ﻿using RevoltUltimate.API.Accounts;
-using RevoltUltimate.API.Contracts;
 using RevoltUltimate.API.Objects;
 using SteamKit2;
 using SteamKit2.Authentication;
-using System.IO;
-using System.Windows.Threading;
-using static SteamKit2.Internal.CMsgRemoteClientBroadcastStatus;
 
 namespace RevoltUltimate.API.Searcher
 {
@@ -46,7 +42,7 @@ namespace RevoltUltimate.API.Searcher
             _authenticator = authenticator ?? throw new ArgumentNullException(nameof(authenticator));
         }
 
-        public Task<EResult> Login(string username, string? password = null)
+        public Task<EResult> Login(string username, string password = null)
         {
             _username = username;
             _password = password ?? AccountManager.GetDecryptedPassword(username);
@@ -56,6 +52,8 @@ namespace RevoltUltimate.API.Searcher
 
             _isRunning = true;
             _steamClient.Connect();
+
+            System.Diagnostics.Debug.WriteLine("SteamLocal: Connecting to Steam...");
 
             Task.Run(() =>
             {
@@ -76,8 +74,7 @@ namespace RevoltUltimate.API.Searcher
 
         private async void OnConnected(SteamClient.ConnectedCallback callback)
         {
-            Console.WriteLine($"Connected to Steam! Authenticating '{_username}'...");
-
+            System.Diagnostics.Debug.WriteLine("SteamLocal: Connected to Steam.");
             try
             {
                 var authSession = await _steamClient.Authentication.BeginAuthSessionViaCredentialsAsync(new AuthSessionDetails
@@ -88,6 +85,9 @@ namespace RevoltUltimate.API.Searcher
                     GuardData = _guardData,
                     Authenticator = _authenticator,
                 });
+                System.Diagnostics.Debug.WriteLine("SteamLocal:" + _username);
+                System.Diagnostics.Debug.WriteLine("SteamLocal:" + _password);
+                System.Diagnostics.Debug.WriteLine("SteamLocal: Authentication session started.");
 
                 var pollResponse = await authSession.PollingWaitForResultAsync();
 
@@ -103,10 +103,12 @@ namespace RevoltUltimate.API.Searcher
                     AccessToken = pollResponse.RefreshToken,
                     ShouldRememberPassword = true,
                 });
+
+                System.Diagnostics.Debug.WriteLine("SteamLocal: LogOn request sent.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Authentication failed: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"SteamLocal: Authentication failed: {ex.Message}");
                 _loginTcs.TrySetResult(EResult.Fail);
             }
         }
@@ -141,9 +143,15 @@ namespace RevoltUltimate.API.Searcher
 
         public async Task<List<Game>> GetOwnedGamesAsync()
         {
-            if (!_steamClient.IsConnected || !_ownedAppIds.Any())
+
+            if (!_steamClient.IsConnected)
             {
-                throw new InvalidOperationException("Not connected to Steam or no game licenses found.");
+                throw new InvalidOperationException("Steam Client is not connected");
+            }
+
+            if (!_ownedAppIds.Any())
+            {
+                throw new InvalidOperationException("No Game licenses found");
             }
 
             var games = new List<Game>();
