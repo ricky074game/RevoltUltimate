@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using RevoltUltimate.Desktop.Setup.Steam;
 
 namespace RevoltUltimate.Desktop.Setup.Steps
 {
@@ -107,7 +108,7 @@ namespace RevoltUltimate.Desktop.Setup.Steps
             switch (optionContent)
             {
                 case "Login with Steam on Web":
-                    var steamLoginWindow = new SteamLogin
+                    var steamLoginWindow = new SteamWebLoginWindow()
                     {
                         Owner = Application.Current.MainWindow
                     };

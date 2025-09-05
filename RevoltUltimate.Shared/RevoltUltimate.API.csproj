@@ -1,24 +1,29 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
-	  <UseWPF>true</UseWPF>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<UseWPF>true</UseWPF>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="Searcher\steamapi.txt" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Remove="Fetcher\IGDBApiKey.txt" />
+		<None Remove="Fetcher\IGDBKeys.txt" />
+		<None Remove="Fetcher\SteamGridDbApiKey.txt" />
+		<None Remove="Searcher\steamapi.txt" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="Fetcher\SteamGridDbApiKey.txt" />
-  </ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Include="Fetcher\IGDBApiKey.txt" />
+		<EmbeddedResource Include="Fetcher\SteamGridDbApiKey.txt" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="SteamKit2" Version="3.3.0" />
-    <PackageReference Include="SteamWebAPI2" Version="4.4.1" />
-    <PackageReference Include="Steamworks.NET" Version="2024.8.0" />
-  </ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="HtmlAgilityPack" Version="1.12.2" />
+		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
+		<PackageReference Include="SteamWebAPI2" Version="4.4.1" />
+	</ItemGroup>
 
 </Project>

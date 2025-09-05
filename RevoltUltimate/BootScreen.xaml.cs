@@ -8,5 +8,15 @@ namespace RevoltUltimate.Desktop
         {
             InitializeComponent();
         }
+
+        public void UpdateProgress(double value)
+        {
+            ProgressBar.Value = value;
+        }
+
+        public void UpdateStatus(string status)
+        {
+            StatusText.Text = status;
+        }
     }
 }

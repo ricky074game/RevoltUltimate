@@ -1,7 +1,9 @@
 ﻿using RevoltUltimate.API.Fetcher;
 using RevoltUltimate.API.Objects;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
@@ -15,6 +17,8 @@ namespace RevoltUltimate.Desktop.Pages
         private GameBanner _gameBannerFetcher;
         private Storyboard _sparkleStoryboard;
 
+        public event EventHandler<Game> GameClicked;
+
         public GameShow(Game game)
         {
             InitializeComponent();
@@ -27,7 +31,7 @@ namespace RevoltUltimate.Desktop.Pages
         private async void InitializeGameDataAsync()
         {
             SetGameTitle(_game.name);
-            string? imageUrl = await _gameBannerFetcher.GetGameBannerUrlAsync(_game.name);
+            string? imageUrl = await _gameBannerFetcher.GetBannerImagePathAsync(_game.name);
             SetGameImage(imageUrl);
 
             int unlockedAchievements = _game.achievements?.Count(a => a.unlocked) ?? 0;
@@ -42,7 +46,7 @@ namespace RevoltUltimate.Desktop.Pages
             {
                 BitmapImage bitmap = new BitmapImage();
                 bitmap.BeginInit();
-                if (Uri.IsWellFormedUriString(imagePath, UriKind.Absolute))
+                if (File.Exists(imagePath))
                 {
                     bitmap.UriSource = new Uri(imagePath, UriKind.Absolute);
                     bitmap.EndInit();
@@ -157,8 +161,8 @@ namespace RevoltUltimate.Desktop.Pages
                 {
                     PathGeometry = pathGeometry,
                     Source = PathAnimationSource.X,
-                    Duration = TimeSpan.FromSeconds(5 + i * 0.2), // Vary speed
-                    BeginTime = TimeSpan.FromSeconds(i * 0.5) // Stagger start times
+                    Duration = TimeSpan.FromSeconds(5 + i * 0.2),
+                    BeginTime = TimeSpan.FromSeconds(i * 0.5)
                 };
                 Storyboard.SetTarget(animationX, sparkle);
                 Storyboard.SetTargetProperty(animationX, new PropertyPath("(Canvas.Left)"));
@@ -208,7 +212,7 @@ namespace RevoltUltimate.Desktop.Pages
 
         private void StartSparkleAnimation()
         {
-            if (_sparkleStoryboard != null && (AchievementBorder.BorderBrush as SolidColorBrush)?.Color != Colors.Transparent)
+            if ((AchievementBorder.BorderBrush as SolidColorBrush)?.Color != Colors.Transparent)
             {
                 // Update sparkle colors if needed, e.g., to match border
                 foreach (var child in SparkleCanvas.Children)
@@ -231,6 +235,11 @@ namespace RevoltUltimate.Desktop.Pages
         private void GameShow_Unloaded(object sender, RoutedEventArgs e)
         {
             _sparkleStoryboard?.Stop(this);
+        }
+
+        private void GameShow_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            GameClicked?.Invoke(this, _game);
         }
     }
 }

@@ -2,6 +2,7 @@
 using RevoltUltimate.Desktop.Setup;
 using System.Windows;
 using System.Windows.Controls;
+using RevoltUltimate.Desktop.Setup.Steam;
 
 namespace RevoltUltimate.Desktop.Options
 {
@@ -42,7 +43,7 @@ namespace RevoltUltimate.Desktop.Options
 
         private void AddAccount_Click(object sender, RoutedEventArgs e)
         {
-            var loginWindow = new SteamLogin();
+            var loginWindow = new SteamWebLoginWindow();
             loginWindow.ShowDialog();
             LoadAccountStatus();
         }

@@ -4,7 +4,9 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
-             d:DesignHeight="270" d:DesignWidth="180">
+             d:DesignHeight="270" d:DesignWidth="180"
+             Unloaded="GameShow_Unloaded"
+             MouseLeftButtonUp="GameShow_MouseLeftButtonUp">
     <Grid>
         <Border x:Name="AchievementBorder" BorderThickness="3" CornerRadius="10" Padding="2">
             <Border.Effect>

@@ -8,9 +8,8 @@ namespace RevoltUltimate.Desktop
     {
         public string Version { get; set; } = "0.1";
 
-        [JsonIgnore]
         public string? CustomAnimationDllPath { get; set; }
-        
+
         [JsonIgnore]
         private byte[]? EncryptedSteamApiKey { get; set; }
 
@@ -19,10 +18,11 @@ namespace RevoltUltimate.Desktop
 
         private static readonly byte[] Entropy = { 1, 4, 8, 2, 5 };
 
+
         public string? SteamApiKey
         {
-            get => Decrypt(EncryptedSteamId); 
-            set => EncryptedSteamId = Encrypt(value);
+            get => Decrypt(EncryptedSteamApiKey);
+            set => EncryptedSteamApiKey = Encrypt(value);
         }
         public string? SteamId
         {

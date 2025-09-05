@@ -1,7 +1,10 @@
-﻿using RevoltUltimate.API.Accounts;
+﻿using HtmlAgilityPack;
+using Newtonsoft.Json.Linq;
+using RevoltUltimate.API.Accounts;
 using RevoltUltimate.API.Objects;
-using SteamKit2;
-using SteamKit2.Authentication;
+using System.Net;
+using System.Net.Http;
+using System.Text.RegularExpressions;
 
 namespace RevoltUltimate.API.Searcher
 {
@@ -9,170 +12,287 @@ namespace RevoltUltimate.API.Searcher
     {
         private static SteamLocal _instance;
         public static SteamLocal Instance => _instance ??= new SteamLocal();
-        private readonly SteamClient _steamClient;
-        private readonly CallbackManager _callbackManager;
-        private readonly SteamUser _steamUser;
-        private readonly SteamApps _steamApps;
-        private IAuthenticator _authenticator;
 
-        private bool _isRunning;
+        private readonly HttpClient _httpClient;
+        private readonly CookieContainer _cookieContainer;
+        private bool _isLoggedIn;
+        private string _steamId64;
         private string _username;
-        private string _password;
-        private string _guardData;
 
-        private readonly List<uint> _ownedAppIds = new List<uint>();
-        private TaskCompletionSource<EResult> _loginTcs;
+        public Func<Tuple<string, string>> ShowLoginWindow { get; set; }
 
         public SteamLocal()
         {
-            _steamClient = new SteamClient();
-            _callbackManager = new CallbackManager(_steamClient);
-
-            _steamUser = _steamClient.GetHandler<SteamUser>();
-            _steamApps = _steamClient.GetHandler<SteamApps>();
-
-            _callbackManager.Subscribe<SteamClient.ConnectedCallback>(OnConnected);
-            _callbackManager.Subscribe<SteamClient.DisconnectedCallback>(OnDisconnected);
-            _callbackManager.Subscribe<SteamUser.LoggedOnCallback>(OnLoggedOn);
-            _callbackManager.Subscribe<SteamUser.LoggedOffCallback>(OnLoggedOff);
-            _callbackManager.Subscribe<SteamApps.LicenseListCallback>(OnLicenseList);
-        }
-        public void SetAuthenticator(IAuthenticator authenticator)
-        {
-            _authenticator = authenticator ?? throw new ArgumentNullException(nameof(authenticator));
+            _cookieContainer = new CookieContainer();
+            var handler = new HttpClientHandler { CookieContainer = _cookieContainer };
+            _httpClient = new HttpClient(handler);
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
         }
 
-        public Task<EResult> Login(string username, string password = null)
+        public async Task<bool> TryRefreshSessionAsync()
         {
-            _username = username;
-            _password = password ?? AccountManager.GetDecryptedPassword(username);
-            _loginTcs = new TaskCompletionSource<EResult>();
-
-            _guardData = AccountManager.GetDecryptedGuardData(_username);
-
-            _isRunning = true;
-            _steamClient.Connect();
-
-            System.Diagnostics.Debug.WriteLine("SteamLocal: Connecting to Steam...");
-
-            Task.Run(() =>
+            if (!_isLoggedIn || string.IsNullOrEmpty(_username))
             {
-                while (_isRunning)
-                {
-                    _callbackManager.RunWaitCallbacks(TimeSpan.FromSeconds(1));
-                }
-            });
+                System.Diagnostics.Debug.WriteLine("SteamLocal: Cannot refresh session, user not logged in.");
+                return false;
+            }
 
-            return _loginTcs.Task;
-        }
-        public void Disconnect()
-        {
-            _isRunning = false;
-            _steamUser.LogOff();
-            _steamClient.Disconnect();
-        }
-
-        private async void OnConnected(SteamClient.ConnectedCallback callback)
-        {
-            System.Diagnostics.Debug.WriteLine("SteamLocal: Connected to Steam.");
             try
             {
-                var authSession = await _steamClient.Authentication.BeginAuthSessionViaCredentialsAsync(new AuthSessionDetails
-                {
-                    Username = _username,
-                    Password = _password,
-                    IsPersistentSession = true,
-                    GuardData = _guardData,
-                    Authenticator = _authenticator,
-                });
-                System.Diagnostics.Debug.WriteLine("SteamLocal:" + _username);
-                System.Diagnostics.Debug.WriteLine("SteamLocal:" + _password);
-                System.Diagnostics.Debug.WriteLine("SteamLocal: Authentication session started.");
+                var response = await _httpClient.GetAsync("https://steamcommunity.com/my/home");
+                response.EnsureSuccessStatusCode();
 
-                var pollResponse = await authSession.PollingWaitForResultAsync();
-
-                if (pollResponse.NewGuardData != null)
+                if (response.RequestMessage.RequestUri.ToString().Contains("login"))
                 {
-                    _guardData = pollResponse.NewGuardData;
-                    AccountManager.SaveAccount(_username, _guardData, _password);
+                    System.Diagnostics.Debug.WriteLine("SteamLocal: Session is invalid, clearing credentials.");
+                    Disconnect();
+                    return false;
                 }
 
-                _steamUser.LogOn(new SteamUser.LogOnDetails
-                {
-                    Username = pollResponse.AccountName,
-                    AccessToken = pollResponse.RefreshToken,
-                    ShouldRememberPassword = true,
-                });
+                var cookies = _cookieContainer.GetCookies(new Uri("https://steamcommunity.com")).Cast<Cookie>();
+                var newSessionId = cookies.FirstOrDefault(c => c.Name == "sessionid")?.Value;
+                var newSteamLoginSecure = cookies.FirstOrDefault(c => c.Name == "steamLoginSecure")?.Value;
 
-                System.Diagnostics.Debug.WriteLine("SteamLocal: LogOn request sent.");
+                if (!string.IsNullOrEmpty(newSessionId) && !string.IsNullOrEmpty(newSteamLoginSecure))
+                {
+                    AccountManager.SaveSteamSession(_username, newSessionId, newSteamLoginSecure);
+                    System.Diagnostics.Debug.WriteLine("SteamLocal: Session refreshed and saved successfully.");
+                }
+
+                return true;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"SteamLocal: Authentication failed: {ex.Message}");
-                _loginTcs.TrySetResult(EResult.Fail);
+                System.Diagnostics.Debug.WriteLine($"SteamLocal: Error refreshing session: {ex.Message}");
+                Disconnect();
+                return false;
             }
         }
 
-        private void OnDisconnected(SteamClient.DisconnectedCallback callback)
+
+
+        public async void SetSessionCookies(string steamLoginSecure, string sessionId, string username)
         {
-            Console.WriteLine("Disconnected from Steam.");
-            _loginTcs?.TrySetResult(EResult.NoConnection);
+            if (string.IsNullOrEmpty(steamLoginSecure) || string.IsNullOrEmpty(sessionId))
+            {
+                _isLoggedIn = false;
+                return;
+            }
+
+            _cookieContainer.Add(new Cookie("steamLoginSecure", steamLoginSecure, "/", ".steamcommunity.com"));
+            _cookieContainer.Add(new Cookie("sessionid", sessionId, "/", ".steamcommunity.com"));
+            _username = username;
+            _isLoggedIn = true;
         }
 
-        private void OnLoggedOn(SteamUser.LoggedOnCallback callback)
+        private async Task<bool> FetchAndSetProfileInfoAsync()
         {
-            Console.WriteLine(callback.Result == EResult.OK
-                ? "Successfully logged on!"
-                : $"Unable to logon to Steam: {callback.Result} / {callback.ExtendedResult}");
+            if (!_isLoggedIn)
+            {
+                System.Diagnostics.Debug.WriteLine("SteamLocal: Cannot get profile info, user is not logged in.");
+                return false;
+            }
 
-            _loginTcs.TrySetResult(callback.Result);
+            try
+            {
+                var response = await _httpClient.GetStringAsync("https://steamcommunity.com/my/");
+
+                var steamIdMatch = Regex.Match(response, @"g_steamID\s*=\s*""(\d+)""");
+                if (steamIdMatch.Success)
+                {
+                    _steamId64 = steamIdMatch.Groups[1].Value;
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("SteamLocal: Could not find SteamID on profile page.");
+                    return false;
+                }
+
+                var personaNameMatch = Regex.Match(response, @"""personaname""\s*:\s*""(.+?)""");
+                if (personaNameMatch.Success)
+                {
+                    _username = personaNameMatch.Groups[1].Value;
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("SteamLocal: Could not find Persona Name on profile page.");
+                    return false;
+                }
+
+                System.Diagnostics.Debug.WriteLine($"SteamLocal: Found SteamID: {_steamId64}, Username: {_username}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"SteamLocal: Error fetching profile page to get info: {ex.Message}");
+                return false;
+            }
         }
-
-        private void OnLoggedOff(SteamUser.LoggedOffCallback callback)
-        {
-            Console.WriteLine($"Logged off of Steam: {callback.Result}");
-        }
-
-        private void OnLicenseList(SteamApps.LicenseListCallback callback)
-        {
-            if (callback.Result != EResult.OK) return;
-            _ownedAppIds.Clear();
-            _ownedAppIds.AddRange(callback.LicenseList.Select(lic => lic.PackageID));
-        }
-
 
         public async Task<List<Game>> GetOwnedGamesAsync()
         {
-
-            if (!_steamClient.IsConnected)
+            if (string.IsNullOrEmpty(_steamId64) && !(await FetchAndSetProfileInfoAsync()))
             {
-                throw new InvalidOperationException("Steam Client is not connected");
-            }
-
-            if (!_ownedAppIds.Any())
-            {
-                throw new InvalidOperationException("No Game licenses found");
+                System.Diagnostics.Debug.WriteLine("SteamLocal: Not logged in or profile info not found, cannot get owned games.");
+                return new List<Game>();
             }
 
             var games = new List<Game>();
-            var requests = _ownedAppIds.Distinct().Select(appId => new SteamApps.PICSRequest(appId)).ToList();
-            var productInfo = await _steamApps.PICSGetProductInfo(requests, new List<SteamApps.PICSRequest>()).ToTask();
+            var url = $"https://steamcommunity.com/profiles/{_steamId64}/games/?tab=all";
 
-            foreach (var app in productInfo.Results.SelectMany(r => r.Apps.Values))
+            try
             {
-                var type = app.KeyValues["common"]["type"]?.AsString()?.ToLower();
-                if (type != "game")
-                    continue;
+                var response = await _httpClient.GetStringAsync(url);
+                var doc = new HtmlDocument();
+                doc.LoadHtml(response);
 
-                var name = app.KeyValues["common"]["name"]?.AsString();
-                if (string.IsNullOrEmpty(name))
-                    continue;
+                var gamesListNode = doc.DocumentNode.SelectSingleNode("//template[@id='gameslist_config']");
+                var jsonData = gamesListNode?.GetAttributeValue("data-profile-gameslist", null);
 
-                var game = new Game(name, "Steam", "", "", "SteamKit2");
-                games.Add(game);
+                if (!string.IsNullOrEmpty(jsonData))
+                {
+                    var decodedJsonData = WebUtility.HtmlDecode(jsonData);
+                    var gamesListJson = JObject.Parse(decodedJsonData);
+                    var ownedGames = gamesListJson["rgGames"];
+
+                    if (ownedGames is JArray gamesArray)
+                    {
+                        foreach (var gameToken in gamesArray)
+                        {
+                            var name = gameToken["name"]?.ToString();
+                            var appId = gameToken["appid"]?.ToString();
+                            var iconHash = gameToken["img_icon_url"]?.ToString();
+                            var logoUrl = !string.IsNullOrEmpty(appId) && !string.IsNullOrEmpty(iconHash)
+                                ? $"https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps/{appId}/{iconHash}.jpg"
+                                : null;
+
+                            if (!string.IsNullOrEmpty(name))
+                            {
+                                var game = new Game(name, "Steam", logoUrl, $"Steam App {appId}", "Steam Local");
+                                games.Add(game);
+                            }
+                        }
+                        System.Diagnostics.Debug.WriteLine($"SteamLocal: Successfully parsed {games.Count} games from profile page.");
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine("SteamLocal: 'rgGames' JSON array not found or is not an array.");
+                    }
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("SteamLocal: Could not find gameslist_config JSON on the games page.");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"SteamLocal: Error fetching or parsing owned games: {ex.Message}");
+            }
+            foreach (var game in games)
+            {
+                var achievements = await GetPlayerAchievementsAsync(uint.Parse(Regex.Match(game.description, @"\d+").Value));
+                game.AddAchievements(achievements);
+            }
+            return games;
+        }
+
+        public async Task<List<Achievement>> GetPlayerAchievementsAsync(uint appId)
+        {
+            if (string.IsNullOrEmpty(_steamId64) && !(await FetchAndSetProfileInfoAsync()))
+            {
+                System.Diagnostics.Debug.WriteLine("SteamLocal: Not logged in or profile info not found, cannot get achievements.");
+                return new List<Achievement>();
             }
 
-            return games;
+            var achievements = new List<Achievement>();
+            var url = $"https://steamcommunity.com/profiles/{_steamId64}/stats/{appId}/?tab=achievements";
+
+            try
+            {
+                var response = await _httpClient.GetStringAsync(url);
+                var doc = new HtmlDocument();
+                doc.LoadHtml(response);
+
+                var achievementNodes = doc.DocumentNode.SelectNodes("//div[@class='achieveRow']");
+                if (achievementNodes == null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"SteamLocal: No achievement rows found for AppID {appId}. The game might not have achievements or the profile is private.");
+                    return achievements;
+                }
+
+                int id = 0;
+                foreach (var node in achievementNodes)
+                {
+                    var name = node.SelectSingleNode(".//h3")?.InnerText.Trim();
+                    var description = node.SelectSingleNode(".//h5")?.InnerText.Trim();
+                    var imageUrl = node.SelectSingleNode(".//img")?.GetAttributeValue("src", "");
+                    var unlocked = node.SelectSingleNode(".//div[@class='achieveUnlockTime']") != null;
+                    var unlockTimeNode = node.SelectSingleNode(".//div[@class='achieveUnlockTime']");
+                    var unlockedTime = unlockTimeNode != null ? unlockTimeNode.InnerText.Trim() : string.Empty;
+
+                    var progressNode = node.SelectSingleNode(".//div[contains(@class, 'achievementProgressBar')]");
+                    bool hasProgress = progressNode != null;
+                    int currentProgress = 0;
+                    int maxProgress = 0;
+
+                    if (hasProgress)
+                    {
+                        var progressTextNode = progressNode.SelectSingleNode(".//div[contains(@class, 'progressText')]");
+                        if (progressTextNode != null)
+                        {
+                            var progressText = progressTextNode.InnerText.Trim().Replace(",", "");
+                            var progressParts = progressText.Split('/');
+                            if (progressParts.Length == 2)
+                            {
+                                int.TryParse(progressParts[0].Trim(), out currentProgress);
+                                int.TryParse(progressParts[1].Trim(), out maxProgress);
+                            }
+                        }
+                    }
+
+                    bool hidden = description.Contains("revealed once unlocked");
+                    if (!string.IsNullOrEmpty(name))
+                    {
+                        var achievement = new Achievement(
+                            Name: name,
+                            Description: description,
+                            ImageUrl: imageUrl,
+                            Hidden: hidden,
+                            Id: id++,
+                            Unlocked: unlocked,
+                            DateTimeUnlocked: unlockedTime,
+                            Difficulty: 1,
+                            apiName: "", // Not available via scraping
+                            progress: hasProgress,
+                            currentProgress: currentProgress,
+                            maxProgress: maxProgress
+                        );
+                        achievements.Add(achievement);
+                    }
+                }
+                System.Diagnostics.Debug.WriteLine($"SteamLocal: Successfully parsed {achievements.Count} achievements for AppID {appId}.");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"SteamLocal: Error fetching or parsing achievements for AppID {appId}: {ex.Message}");
+            }
+
+            return achievements;
+        }
+
+        public void Disconnect()
+        {
+            if (!string.IsNullOrEmpty(_username))
+            {
+                AccountManager.ClearSteamSession(_username);
+            }
+
+            _isLoggedIn = false;
+            _steamId64 = null;
+            _username = null;
+            _cookieContainer.Add(new Cookie("steamLoginSecure", DateTime.Now.AddDays(-1).ToString(), "/", ".steamcommunity.com"));
+            _cookieContainer.Add(new Cookie("sessionid", DateTime.Now.AddDays(-1).ToString(), "/", ".steamcommunity.com"));
+            System.Diagnostics.Debug.WriteLine("SteamLocal: User logged out, cookies cleared and stored session deleted.");
         }
     }
 }

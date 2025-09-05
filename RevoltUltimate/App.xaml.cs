@@ -6,47 +6,54 @@ using RevoltUltimate.Desktop.Setup;
 using RevoltUltimate.Desktop.Setup.Steam;
 using System.IO;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace RevoltUltimate.Desktop
 {
     public partial class App : Application
     {
         public static User? CurrentUser { get; set; }
-        private static string SettingsFilePath => Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData), "RevoltUltimate", "settings.json");
+        private static string SettingsFilePath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RevoltUltimate", "settings.json");
 
-        private static string UserFilePath => Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData), "RevoltUltimate", "user.json");
+        private static string UserFilePath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RevoltUltimate", "user.json");
         private const string SetupCompleteEventName = "RevoltUltimateSetupCompleteEvent";
         public static ApplicationSettings? Settings { get; private set; }
         private const string CurrentSettingsVersion = "0.1";
+        private DispatcherTimer _sessionRefreshTimer;
 
 
         private async void Application_Startup(object sender, StartupEventArgs e)
         {
+            this.ShutdownMode = ShutdownMode.OnMainWindowClose;
             var bootScreen = new BootScreen();
             bootScreen.Show();
 
             try
             {
+                bootScreen.UpdateStatus("Loading user data...");
+                bootScreen.UpdateProgress(5);
                 LoadUser();
                 if (CurrentUser == null)
                 {
                     await RunSetup(bootScreen);
                 }
-
+                bootScreen.UpdateStatus("Loading Settings...");
+                bootScreen.UpdateProgress(10);
                 UpdateSettings();
                 if (Settings == null)
                 {
                     MessageBox.Show("Settings file is missing or corrupted. The application will now open setup.", "Settings Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                     await RunSetup(bootScreen);
                 }
+                bootScreen.UpdateProgress(50);
 
-                await SetupLinkers();
+                await SetupLinkers(bootScreen);
 
-                bootScreen.Close();
-                this.ShutdownMode = ShutdownMode.OnMainWindowClose;
                 MainWindow mainWindow = new MainWindow();
                 this.MainWindow = mainWindow;
                 mainWindow.Show();
+                bootScreen.Close();
+
             }
             catch (Exception ex)
             {
@@ -55,6 +62,21 @@ namespace RevoltUltimate.Desktop
                 Current.Shutdown();
             }
         }
+
+        private void SetupSessionRefreshTimer()
+        {
+            _sessionRefreshTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromHours(6)
+            };
+            _sessionRefreshTimer.Tick += async (s, e) =>
+            {
+                System.Diagnostics.Debug.WriteLine("Timer Ticked: Attempting to refresh Steam session.");
+                await SteamLocal.Instance.TryRefreshSessionAsync();
+            };
+            _sessionRefreshTimer.Start();
+        }
+
         private void UpdateSettings()
         {
             if (File.Exists(SettingsFilePath))
@@ -132,7 +154,7 @@ namespace RevoltUltimate.Desktop
         private async Task RunSetup(BootScreen bootScreen)
         {
             this.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-
+            bootScreen.Close();
             EventWaitHandle? setupCompleteEvent = null;
             try
             {
@@ -148,7 +170,6 @@ namespace RevoltUltimate.Desktop
             catch (Exception ex)
             {
                 MessageBox.Show($"Error initializing setup event: {ex.Message}. Application will exit.", "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                bootScreen.Close();
                 Current.Shutdown();
                 return;
             }
@@ -161,7 +182,6 @@ namespace RevoltUltimate.Desktop
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to start the setup process: {ex.Message}. Application will exit.", "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                bootScreen.Close();
                 Current.Shutdown();
                 return;
             }
@@ -169,14 +189,13 @@ namespace RevoltUltimate.Desktop
             bool signaled = false;
             await Task.Run(() =>
             {
-                signaled = setupCompleteEvent.WaitOne(TimeSpan.FromMinutes(5));
+                signaled = setupCompleteEvent.WaitOne(TimeSpan.FromMinutes(100));
             });
             setupCompleteEvent.Close();
 
             if (!signaled)
             {
                 MessageBox.Show("Setup process did not complete in time. Application will exit.", "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                bootScreen.Close();
                 Current.Shutdown();
                 return;
             }
@@ -185,72 +204,53 @@ namespace RevoltUltimate.Desktop
             if (CurrentUser == null)
             {
                 MessageBox.Show("Setup was not completed successfully or user data is missing. Application will exit.", "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                bootScreen.Close();
                 Current.Shutdown();
                 return;
             }
         }
 
-        private async Task SetupLinkers()
+        private async Task SetupLinkers(BootScreen bootScreen)
         {
-            if (Settings != null && !string.IsNullOrEmpty(Settings.SteamApiKey) && !string.IsNullOrWhiteSpace(Settings.SteamId))
+            bootScreen.UpdateStatus("Setting up Steam integration...");
+
+            if (Settings != null && !string.IsNullOrEmpty(Settings.SteamApiKey) && !string.IsNullOrEmpty(Settings.SteamId))
             {
-                try
-                {
-                    SteamWeb.InitializeSharedInstance(Settings.SteamApiKey, Settings.SteamId);
-                    System.Diagnostics.Debug.WriteLine("SteamWeb has been successfully initialized.");
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Failed to initialize SteamWeb: {ex.Message}", "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    Current.Shutdown();
-                }
+                SteamWeb.InitializeSharedInstance(Settings.SteamApiKey, Settings.SteamId);
             }
 
-            var savedAccount = AccountManager.GetSavedAccounts().FirstOrDefault();
-            if (savedAccount == null) return;
-
-            var authenticator = new WpfAuthenticator(this.Dispatcher);
-            SteamLocal.Instance.SetAuthenticator(authenticator);
-
-            var result = await SteamLocal.Instance.Login(savedAccount.Username);
-
-            if (result == SteamKit2.EResult.OK)
+            SteamLocal.Instance.ShowLoginWindow = () =>
             {
-                System.Diagnostics.Debug.WriteLine($"Successfully logged in as {savedAccount.Username}.");
+                var loginWindow = new SteamWebLoginWindow();
+                if (loginWindow.ShowDialog() == true)
+                {
+                    return new Tuple<string, string>(loginWindow.SteamLoginSecure, loginWindow.SessionId);
+                }
+                return null;
+            };
+
+            var savedAccount = AccountManager.GetSavedAccounts().FirstOrDefault();
+            if (savedAccount != null)
+            {
+                var session = AccountManager.GetSteamSession(savedAccount.Username);
+
+                bootScreen.UpdateStatus($"Logging in as {savedAccount.Username}...");
+                SteamLocal.Instance.SetSessionCookies(session.Item1, session.Item2, savedAccount.Username);
+
+                bool sessionIsValid = await SteamLocal.Instance.TryRefreshSessionAsync();
+
+                if (sessionIsValid)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Successfully logged in as {savedAccount.Username}.");
+                    SetupSessionRefreshTimer();
+                }
+                else
+                {
+                    MessageBox.Show("Your saved Steam session has expired. Please log in again.", "Session Expired", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
             }
             else
             {
-                //Login failed
-                MessageBox.Show($"Failed to log in as {savedAccount.Username}. Result: {result}", "Login Error",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                Current.Shutdown();
-            }
-        }
-
-        private void UpdateSettings()
-        {
-            if (File.Exists(SettingsFilePath))
-            {
-                try
-                {
-                    string json = File.ReadAllText(SettingsFilePath);
-                    Settings = JsonConvert.DeserializeObject<ApplicationSettings>(json);
-
-                    if (Settings != null && Settings.Version == CurrentSettingsVersion)
-                    {
-                    }
-                    else if (Settings != null && Settings.Version != CurrentSettingsVersion)
-                    {
-                        MessageBox.Show($"Settings file is an outdated version ({Settings.Version}). Resetting to default settings for version {CurrentSettingsVersion}.", "Settings Update", MessageBoxButton.OK, MessageBoxImage.Information);
-                        Settings = null;
-                    }
-                }
-                catch (System.Exception ex)
-                {
-                    MessageBox.Show($"An unexpected error occurred while loading settings: {ex.Message}. Resetting to default settings.", "Settings Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    Settings = null;
-                }
+                System.Diagnostics.Debug.WriteLine("No saved Steam account found.");
             }
         }
 
@@ -287,6 +287,5 @@ namespace RevoltUltimate.Desktop
                 CurrentUser = null;
             }
         }
-
     }
 }

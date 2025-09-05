@@ -10,6 +10,7 @@ using System.IO;
 using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
@@ -27,6 +28,10 @@ namespace RevoltUltimate.Desktop
         public string ProfilePicturePath { get; set; }
         private bool _isExplicitlyClosing = false;
         private DispatcherTimer _backgroundTaskTimer;
+        private bool _isBackgroundTaskRunning = false;
+        private UniformGrid _gamesGrid = new UniformGrid { Columns = 5, Margin = new Thickness(15) };
+
+
         public NotificationViewModel NotificationViewModel { get; private set; }
 
         public MainWindow()
@@ -47,7 +52,7 @@ namespace RevoltUltimate.Desktop
             NotificationSystem.DataContext = NotificationViewModel;
             UpdateXpBar();
             UpdateLevelAndTooltipText();
-            AddGamesToGrid();
+            AddGamesToGrid(false, true);
 
             InitializeTaskbarIcon();
             InitializeBackgroundTask();
@@ -132,7 +137,6 @@ namespace RevoltUltimate.Desktop
             _backgroundTaskTimer.Interval = TimeSpan.FromSeconds(30);
             _backgroundTaskTimer.Tick += BackgroundTask_Tick;
             _backgroundTaskTimer.Start();
-            RunPeriodicBackgroundTask();
         }
 
         private void BackgroundTask_Tick(object sender, EventArgs e)
@@ -142,39 +146,69 @@ namespace RevoltUltimate.Desktop
 
         public async void RunPeriodicBackgroundTask()
         {
+            if (_isBackgroundTaskRunning)
+            {
+                System.Diagnostics.Debug.WriteLine("Background task is already running. Skipping new invocation.");
+                return;
+            }
+
+            _isBackgroundTaskRunning = true;
             System.Diagnostics.Debug.WriteLine($"Background task running at: {DateTime.Now}");
             string taskName = "Checking for new achievements";
             NotificationViewModel.AddTask(taskName);
 
             try
             {
-                foreach (var game in CurrentUser.Games)
-                {
-                    Update? updater = null;
-                    if (game.platform.Equals("Steam", StringComparison.OrdinalIgnoreCase))
+                var achievementTasks = CurrentUser.Games
+                    .Select(game =>
                     {
-                        updater = new SteamUpdate();
-                    }
-
-                    if (updater != null)
-                    {
-                        var newAchievements = await updater.CheckForNewAchievementsAsync(game);
-                        if (newAchievements.Any())
+                        Update updater = null;
+                        if (game.method.Equals("Steam Local", StringComparison.OrdinalIgnoreCase))
                         {
-                            Save();
-                            foreach (var achievement in newAchievements)
-                            {
-                                AchievementWindow.ShowNotification(achievement, App.Settings.CustomAnimationDllPath);
-                            }
+                            updater = new SteamLocalUpdate();
+                        }
+                        else if (game.method.Equals("Steam Web API", StringComparison.OrdinalIgnoreCase))
+                        {
+                            updater = new SteamUpdate();
+                        }
+
+                        return updater != null
+                            ? updater.CheckForNewAchievementsAsync(game)
+                            : Task.FromResult<List<Achievement>>(new List<Achievement>());
+                    })
+                    .ToList();
+
+                var allNewAchievements = await Task.WhenAll(achievementTasks);
+
+                bool foundAny = false;
+                for (int i = 0; i < CurrentUser.Games.Count; i++)
+                {
+                    var newAchievements = allNewAchievements[i];
+                    if (newAchievements.Any())
+                    {
+                        foundAny = true;
+                        System.Diagnostics.Debug.WriteLine("FOUND NEW ACHIEVEMENT!!");
+                        foreach (var achievement in newAchievements)
+                        {
+                            AchievementWindow.ShowNotification(achievement, App.Settings.CustomAnimationDllPath);
                         }
                     }
                 }
+                if (foundAny)
+                {
+                    Save();
+                }
                 NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Success);
+                Save();
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error checking for achievements: {ex.Message}");
                 NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed, ex.Message);
+            }
+            finally
+            {
+                _isBackgroundTaskRunning = false;
             }
         }
 
@@ -311,72 +345,93 @@ namespace RevoltUltimate.Desktop
             };
             aboutWindow.ShowDialog();
         }
+        private void AddGame_Click(object sender, RoutedEventArgs e)
+        {
+            var searchWindow = new GameSearchWindow();
+            searchWindow.ShowDialog();
+        }
 
-        private async Task AddGamesToGrid()
+        private async Task AddGamesToGrid(bool back, bool load)
         {
             var allGames = new List<Game>();
 
-            if (CurrentUser.Games != null && CurrentUser.Games.Any())
+            MainContentControl.Content = new ScrollViewer
             {
-                allGames.AddRange(CurrentUser.Games);
-                System.Diagnostics.Debug.WriteLine($"Loaded {CurrentUser.Games.Count} local games.");
-            }
-            else
-            {
-                System.Diagnostics.Debug.WriteLine("No local games found in CurrentUser.Games.");
-            }
+                Content = _gamesGrid,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
+            };
 
-            if (SteamWeb.Instance.IsSteamApiReady)
+            if (!back)
             {
-                string taskName = "Fetching games from Steam API";
-                NotificationViewModel.AddTask(taskName);
-
-                try
+                if (load)
                 {
-                    List<Game> steamGames = await SteamWeb.Instance.Update();
-                    if (steamGames != null)
+                    if (CurrentUser.Games.Any())
                     {
-                        foreach (var steamGame in steamGames)
-                        {
-                            bool gameExists = allGames.Any(g =>
-                                g.name.Equals(steamGame.name, StringComparison.OrdinalIgnoreCase) &&
-                                g.platform.Equals(steamGame.platform, StringComparison.OrdinalIgnoreCase));
+                        System.Diagnostics.Debug.WriteLine($"Loaded {CurrentUser.Games.Count} local games.");
+                        AddSelectGamesToGrid(CurrentUser.Games);
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine("No local games found in CurrentUser.Games.");
+                    }
+                }
+                if (App.Settings != null && !string.IsNullOrEmpty(App.Settings.SteamApiKey) &&
+                !string.IsNullOrWhiteSpace(App.Settings.SteamId))
+                {
+                    if (SteamWeb.Instance.IsSteamApiReady)
+                    {
+                        string taskName = "Fetching games from Steam API";
+                        NotificationViewModel.AddTask(taskName);
 
-                            if (!gameExists)
+                        try
+                        {
+                            List<Game> steamGames = await SteamWeb.Instance.Update();
+                            if (steamGames != null)
                             {
-                                allGames.Add(steamGame);
-                                System.Diagnostics.Debug.WriteLine($"Added game from Steam API: {steamGame.name} ({steamGame.platform})");
+                                foreach (var steamGame in steamGames)
+                                {
+                                    bool gameExists = allGames.Any(g =>
+                                        g.name.Equals(steamGame.name, StringComparison.OrdinalIgnoreCase) &&
+                                        g.platform.Equals(steamGame.platform, StringComparison.OrdinalIgnoreCase));
+
+                                    if (!gameExists)
+                                    {
+                                        allGames.Add(steamGame);
+                                        System.Diagnostics.Debug.WriteLine(
+                                            $"Added game from Steam API: {steamGame.name} ({steamGame.platform})");
+                                    }
+                                }
                             }
+
+                            NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Success);
+                        }
+                        catch (HttpRequestException httpEx)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Error fetching games from Steam API: {httpEx.Message}");
+                            NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed, httpEx.Message);
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Error in Steam API fetch: {ex.Message}");
+                            NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed,
+                                "An unexpected error occurred.");
                         }
                     }
-                    NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Success);
-                }
-                catch (HttpRequestException httpEx)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Error fetching games from Steam API: {httpEx.Message}");
-                    NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed, httpEx.Message);
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Error in Steam API fetch: {ex.Message}");
-                    NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed, "An unexpected error occurred.");
-                }
-            }
-            else
-            {
-                System.Diagnostics.Debug.WriteLine("Steam Web API is not ready (check API key and Steam ID).");
-            }
-
-            if (SteamLocal.Instance != null)
-            {
-                string taskName = "Fetching games from Steam Local";
-                NotificationViewModel.AddTask(taskName);
-
-                try
-                {
-                    List<Game> localSteamGames = await SteamLocal.Instance.GetOwnedGamesAsync();
-                    if (localSteamGames != null)
+                    else
                     {
+                        System.Diagnostics.Debug.WriteLine("Steam Web API is not ready (check API key and Steam ID).");
+                    }
+                }
+
+                if (SteamLocal.Instance != null)
+                {
+                    string taskName = "Fetching games from Steam Local";
+                    NotificationViewModel.AddTask(taskName);
+
+                    try
+                    {
+                        List<Game> localSteamGames = await SteamLocal.Instance.GetOwnedGamesAsync();
                         foreach (var localSteamGame in localSteamGames)
                         {
                             bool gameExists = allGames.Any(g =>
@@ -389,17 +444,17 @@ namespace RevoltUltimate.Desktop
                                 System.Diagnostics.Debug.WriteLine($"Added game from Steam Local: {localSteamGame.name} ({localSteamGame.platform})");
                             }
                         }
+                        NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Success);
                     }
-                    NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Success);
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Error fetching games from Steam Local: {ex.Message}");
+                        NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed, "An unexpected error occurred.");
+                    }
                 }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Error fetching games from Steam Local: {ex.Message}");
-                    NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed, "An unexpected error occurred.");
-                }
+                CurrentUser.Games = allGames;
+                AddSelectGamesToGrid(allGames);
             }
-
-            AddSelectGamesToGrid(allGames);
         }
 
         private void AddSelectGamesToGrid(List<Game> games)
@@ -407,15 +462,22 @@ namespace RevoltUltimate.Desktop
             if (!games.Any())
             {
                 System.Diagnostics.Debug.WriteLine("No games to add to the grid.");
+                Save();
                 return;
             }
-            GamesGrid.Children.Clear();
             foreach (var game in games)
             {
+                if (_gamesGrid.Children.OfType<GameShow>().Any(g => g.DataContext is Game existingGame && existingGame.name == game.name && existingGame.platform == game.platform))
+                {
+                    continue;
+                }
                 var gameShowControl = new GameShow(game);
-                GamesGrid.Children.Add(gameShowControl);
+                gameShowControl.GameClicked += OnGameClicked;
+                _gamesGrid.Children.Add(gameShowControl);
             }
+            Save();
         }
+
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
@@ -442,6 +504,23 @@ namespace RevoltUltimate.Desktop
             _taskbarIcon?.Dispose();
             _taskbarIcon = null;
             base.OnClosed(e);
+        }
+        private void OnGameClicked(object sender, Game game)
+        {
+            var achievementsPage = new GameAchievementsPage(game);
+            achievementsPage.BackClicked += OnBackClicked;
+
+            MainContentControl.Content = achievementsPage;
+        }
+
+        private void OnBackClicked(object sender, System.EventArgs e)
+        {
+            AddGamesToGrid(true, false);
+        }
+
+        private void ReloadOnClick(object sender, RoutedEventArgs e)
+        {
+            AddGamesToGrid(false, false);
         }
     }
 }

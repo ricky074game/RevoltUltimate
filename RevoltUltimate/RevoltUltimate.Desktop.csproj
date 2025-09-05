@@ -14,12 +14,15 @@
     <None Remove="Images\circle.gif" />
     <None Remove="Images\profilepic.png" />
     <None Remove="Images\RoninLogo.png" />
+    <None Remove="Images\unknown.jpg" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="2.0.1" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3405.78" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="SharpVectors" Version="1.8.4.2" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
   </ItemGroup>
 
   <ItemGroup>
@@ -41,6 +44,9 @@
     </Resource>
     <Resource Include="Images\RoninLogo.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Images\unknown.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Resource>
   </ItemGroup>
 

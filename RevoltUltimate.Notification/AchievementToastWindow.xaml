@@ -396,8 +396,5 @@
                 <Image x:Name="AchievementImageIcon" Visibility="Collapsed" Stretch="Uniform" Width="20" Height="20"/>
             </Grid>
         </Viewbox>
-
-        <MediaElement x:Name="AchievementSound" LoadedBehavior="Manual" UnloadedBehavior="Stop" 
-                      Source="sound.wav" Opacity="0" IsHitTestVisible="False"/>
     </Grid>
 </Window>

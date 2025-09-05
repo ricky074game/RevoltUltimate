@@ -1,6 +1,7 @@
 ﻿using RevoltUltimate.API.Contracts; // For IAchievementNotifier
 using RevoltUltimate.API.Objects;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 
@@ -11,8 +12,22 @@ namespace RevoltUltimate.Notification
         private static readonly Queue<Achievement> _achievementQueue = new Queue<Achievement>();
         private static readonly object _queueLock = new object();
         private static bool _isNotificationVisible = false;
+        private static readonly MediaPlayer AchievementSound = new MediaPlayer();
 
         private Achievement _currentAchievement;
+
+        static AchievementToastWindow()
+        {
+            try
+            {
+                Uri soundUri = new Uri("pack://application:,,,/RevoltUltimate.Notification;component/Sounds/achievement.wav", UriKind.Absolute);
+                AchievementSound.Open(soundUri);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error loading achievement sound: {ex.Message}");
+            }
+        }
 
         public AchievementToastWindow()
         {
@@ -22,79 +37,43 @@ namespace RevoltUltimate.Notification
         private AchievementToastWindow(Achievement achievement) : this()
         {
             _currentAchievement = achievement;
+            this.DataContext = achievement;
             this.Closed += OnDisplayedToastClosed;
         }
 
-
         public void ShowAchievement(Achievement achievement)
         {
-            if (!Dispatcher.CheckAccess())
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                Dispatcher.Invoke(() => EnqueueAndAttemptDisplay(achievement));
-            }
-            else
-            {
-                EnqueueAndAttemptDisplay(achievement);
-            }
-        }
-
-        private void EnqueueAndAttemptDisplay(Achievement achievement)
-        {
-            lock (_queueLock)
-            {
-                _achievementQueue.Enqueue(achievement);
-            }
-            TryDisplayNext();
+                lock (_queueLock)
+                {
+                    _achievementQueue.Enqueue(achievement);
+                }
+                TryDisplayNext();
+            });
         }
 
         private static void TryDisplayNext()
         {
-            Achievement achievementToDisplay = null;
-            bool canDisplay = false;
-
             lock (_queueLock)
             {
                 if (!_isNotificationVisible && _achievementQueue.Count > 0)
                 {
-                    achievementToDisplay = _achievementQueue.Dequeue();
+                    var achievementToDisplay = _achievementQueue.Dequeue();
                     _isNotificationVisible = true;
-                    canDisplay = true;
-                }
-            }
 
-            if (canDisplay && achievementToDisplay != null)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    AchievementToastWindow toastWindow = new AchievementToastWindow(achievementToDisplay);
-                    toastWindow.ShowAndAnimate();
-                });
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        var toastWindow = new AchievementToastWindow(achievementToDisplay);
+                        toastWindow.ShowAndAnimate();
+                    });
+                }
             }
         }
 
         private void ShowAndAnimate()
         {
-            AchievementNameRun.Text = $" - {_currentAchievement.name}";
-            switch(_currentAchievement.difficulty)
-            {
-                case 0:
-                    AchievementScoreRun.Text = "Easy";
-                    break;
-                case 1:
-                    AchievementScoreRun.Text = "Medium";
-                    break;
-                case 2:
-                    AchievementScoreRun.Text = "Hard";
-                    break;
-                case 3:
-                    AchievementScoreRun.Text = "Very Hard";
-                    break;
-                default:
-                    AchievementScoreRun.Text = "Unknown";
-                    break;
-            }
-
-            var workingArea = System.Windows.SystemParameters.WorkArea;
+            var workingArea = SystemParameters.WorkArea;
             this.Left = workingArea.Left + (workingArea.Width - this.Width) / 2;
             this.Top = workingArea.Top + 20;
 
@@ -122,24 +101,17 @@ namespace RevoltUltimate.Notification
         {
             if (FindResource("ExitStoryboard") is Storyboard exitStoryboard)
             {
-                exitStoryboard.Completed += (s, e) =>
-                {
-                    AchievementSound.Stop();
-                    this.Close();
-                };
+                exitStoryboard.Completed += (s, e) => this.Close();
                 exitStoryboard.Begin(this);
             }
             else
             {
-                AchievementSound.Stop();
                 this.Close();
             }
         }
 
         private void OnDisplayedToastClosed(object sender, EventArgs e)
         {
-            this.Closed -= OnDisplayedToastClosed;
-
             lock (_queueLock)
             {
                 _isNotificationVisible = false;

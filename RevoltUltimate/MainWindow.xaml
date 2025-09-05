@@ -9,7 +9,16 @@
     <Window.Resources>
         <ImageSource x:Key="RoninLogoImageSource">images/RoninLogo.png</ImageSource>
         <converters:ProgressToWidthConverter x:Key="ProgressToWidthConverter"/>
-
+        <Storyboard x:Key="FadeInOverlay">
+            <DoubleAnimation Storyboard.TargetName="DarkOverlay"
+                             Storyboard.TargetProperty="Opacity"
+                             From="0" To="1" Duration="0:0:0.3" />
+        </Storyboard>
+        <Storyboard x:Key="FadeOutOverlay">
+            <DoubleAnimation Storyboard.TargetName="DarkOverlay"
+                             Storyboard.TargetProperty="Opacity"
+                             From="1" To="0" Duration="0:0:0.3" />
+        </Storyboard>
         <Style x:Key="TitleBarButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="White"/>
@@ -174,16 +183,28 @@
                             Margin="0,0,2,0">
                     <Grid Width="40" Height="40" Margin="0,0,8,0" VerticalAlignment="Center">
                         <Ellipse
-        Stroke="White"
-        StrokeThickness="2"
-        Fill="Black"/>
+                            Stroke="White"
+                            StrokeThickness="2"
+                            Fill="Black"/>
                         <Ellipse
-        Margin="3">
+                            Margin="3">
                             <Ellipse.Fill>
                                 <ImageBrush ImageSource="{Binding ProfilePicturePath, FallbackValue='pack://application:,,,/Images/profilepic.png', TargetNullValue='pack://application:,,,/Images/profilepic.png'}" Stretch="Uniform"/>
                             </Ellipse.Fill>
                         </Ellipse>
                     </Grid>
+                    <Button Width="24" Height="24"
+                            Style="{StaticResource TitleBarButtonStyle}"
+                            Padding="0"
+                            ToolTip="Add Game"
+                            Click="AddGame_Click">
+                        <TextBlock FontFamily="Segoe MDL2 Assets"
+                                   FontSize="16"
+                                   Text="&#xE710;"
+                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"/>
+                    </Button>
                     <controls:NotificationBell x:Name="NotificationSystem" VerticalAlignment="Center" Margin="0,0,4,0"/>
                     <Button Width="24" Height="24"
                             Style="{StaticResource TitleBarButtonStyle}"
@@ -213,6 +234,8 @@
                                     <Style TargetType="{x:Type MenuItem}" BasedOn="{StaticResource SharedMenuItemStyle}"/>
                                     <Style TargetType="{x:Type Separator}" BasedOn="{StaticResource SharedSeparatorStyle}"/>
                                 </ContextMenu.Resources>
+                                <MenuItem Header ="Reload" Click="ReloadOnClick"/>
+                                <Separator/>
                                 <MenuItem Header="Settings" Click="Menu_Settings_Click"/>
                                 <MenuItem Header="About" Click="Menu_About_Click"/>
                                 <Separator/>
@@ -230,13 +253,8 @@
             </Grid>
         </Border>
         <Grid x:Name="MainContent">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="15,15,15,15">
-                <UniformGrid x:Name="GamesGrid" Columns="5"/>
-            </ScrollViewer>
+            <ContentControl x:Name="MainContentControl" />
+
         </Grid>
     </DockPanel>
 </Window>

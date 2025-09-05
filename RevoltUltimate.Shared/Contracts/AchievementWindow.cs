@@ -11,11 +11,6 @@ namespace RevoltUltimate.API.Contracts
 
         public static void ShowNotification(Achievement achievement, string? customNotifierDllPath)
         {
-            if (achievement == null)
-            {
-                Console.WriteLine("Achievement object cannot be null.");
-                return;
-            }
 
             if (string.IsNullOrEmpty(customNotifierDllPath))
             {

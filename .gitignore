@@ -366,3 +366,5 @@ FodyWeavers.xsd
 /RevoltUltimate.Shared/SteamGridDbApiKey.txt
 /RevoltUltimate.Shared/SteamGridDbApiKey.txt
 /RevoltUltimate.Shared/Fetcher/SteamGridDbApiKey.txt
+/RevoltUltimate.Shared/Fetcher/IGDBKey.txt
+/RevoltUltimate.Shared/Fetcher/IGDBApiKey.txt

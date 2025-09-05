@@ -20,8 +20,8 @@ namespace RevoltUltimate.API.Searcher
             }
         }
 
-        private string _apiKey; // Store API key
-        private string _steamIdString; // Store Steam ID string
+        private string _apiKey;
+        private string _steamIdString;
 
         private SteamWebInterfaceFactory _webInterfaceFactory;
         private PlayerService _playerService;
@@ -173,6 +173,9 @@ namespace RevoltUltimate.API.Searcher
                         var schemaAch = schemaAchievements.ElementAt(i);
                         bool isUnlocked = false;
                         string unlockTimestamp = "";
+                        bool hasProgress = false;
+                        int currentProgress = 0;
+                        int maxProgress = 0;
 
                         if (playerAchievements.TryGetValue(schemaAch.Name, out PlayerAchievementModel playerAch))
                         {
@@ -194,7 +197,11 @@ namespace RevoltUltimate.API.Searcher
                             i,
                             isUnlocked,
                             unlockTimestamp,
-                            1
+                            1,
+                            schemaAch.Name,
+                            hasProgress,
+                            currentProgress,
+                            maxProgress
                         );
                         achievements.Add(achievement);
                     }

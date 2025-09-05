@@ -13,8 +13,10 @@ namespace RevoltUltimate.Desktop.Pages
             LoadCategories();
             if (CategoryListBox.Items.Count > 0)
                 CategoryListBox.SelectedIndex = 0;
+            this.Owner = Application.Current.MainWindow;
 
         }
+
         private void LoadCategories()
         {
             CategoryListBox.Items.Add(new OptionsCategory { Name = "General", Content = new GeneralOptionsPage() });

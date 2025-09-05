@@ -35,10 +35,9 @@ namespace RevoltUltimate.Desktop.Pages
         {
             InitializeComponent();
             DataContext = this;
-
+            this.Owner = Application.Current.MainWindow;
             CheckForUpdateAsync();
         }
-
         private async void CheckForUpdateAsync()
         {
             string currentVersion = "0.0.1";

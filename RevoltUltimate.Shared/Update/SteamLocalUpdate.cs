@@ -1,27 +1,40 @@
 ﻿using RevoltUltimate.API.Objects;
 using RevoltUltimate.API.Searcher;
+using System.Text.RegularExpressions;
 
 namespace RevoltUltimate.API.Update
 {
-    public class SteamUpdate : Update
+    public class SteamLocalUpdate : Update
     {
         public override async Task<List<Achievement>> CheckForNewAchievementsAsync(Game game)
         {
-            if (!SteamWeb.Instance.IsSteamApiReady)
+            var newlyEarned = new List<Achievement>();
+
+            uint appId = 0;
+            if (!string.IsNullOrEmpty(game.description))
             {
-                return new List<Achievement>();
+                var match = Regex.Match(game.description, @"Steam App (\d+)");
+                if (match.Success && uint.TryParse(match.Groups[1].Value, out uint parsedAppId))
+                {
+                    appId = parsedAppId;
+                }
             }
 
-            var newlyEarned = new List<Achievement>();
-            var latestAchievements = await SteamWeb.Instance.GetAchievementsForGame(game.name);
+            if (appId == 0)
+            {
+                System.Diagnostics.Debug.WriteLine($"Could not find a valid AppId for game: {game.name}");
+                return newlyEarned;
+            }
+
+            var latestAchievements = await SteamLocal.Instance.GetPlayerAchievementsAsync(appId);
 
             if (latestAchievements != null)
             {
-                var existingAchievements = game.achievements.ToDictionary(a => a.apiName);
+                var existingAchievements = game.achievements.ToDictionary(a => a.name);
 
                 foreach (var latestAchievement in latestAchievements)
                 {
-                    if (existingAchievements.TryGetValue(latestAchievement.apiName, out var existingAchievement))
+                    if (existingAchievements.TryGetValue(latestAchievement.name, out var existingAchievement))
                     {
                         if (latestAchievement.unlocked && !existingAchievement.unlocked)
                         {
