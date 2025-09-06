@@ -165,7 +165,7 @@ namespace RevoltUltimate.Desktop
                         Update updater = null;
                         if (game.method.Equals("Steam Local", StringComparison.OrdinalIgnoreCase))
                         {
-                            updater = new SteamLocalUpdate();
+                            updater = new SteamScrapeUpdate();
                         }
                         else if (game.method.Equals("Steam Web API", StringComparison.OrdinalIgnoreCase))
                         {
@@ -424,14 +424,14 @@ namespace RevoltUltimate.Desktop
                     }
                 }
 
-                if (SteamLocal.Instance != null)
+                if (SteamScrape.Instance != null)
                 {
                     string taskName = "Fetching games from Steam Local";
                     NotificationViewModel.AddTask(taskName);
 
                     try
                     {
-                        List<Game> localSteamGames = await SteamLocal.Instance.GetOwnedGamesAsync();
+                        List<Game> localSteamGames = await SteamScrape.Instance.GetOwnedGamesAsync();
                         foreach (var localSteamGame in localSteamGames)
                         {
                             bool gameExists = allGames.Any(g =>

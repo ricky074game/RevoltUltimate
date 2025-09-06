@@ -72,7 +72,7 @@ namespace RevoltUltimate.Desktop
             _sessionRefreshTimer.Tick += async (s, e) =>
             {
                 System.Diagnostics.Debug.WriteLine("Timer Ticked: Attempting to refresh Steam session.");
-                await SteamLocal.Instance.TryRefreshSessionAsync();
+                await SteamScrape.Instance.TryRefreshSessionAsync();
             };
             _sessionRefreshTimer.Start();
         }
@@ -218,7 +218,7 @@ namespace RevoltUltimate.Desktop
                 SteamWeb.InitializeSharedInstance(Settings.SteamApiKey, Settings.SteamId);
             }
 
-            SteamLocal.Instance.ShowLoginWindow = () =>
+            SteamScrape.Instance.ShowLoginWindow = () =>
             {
                 var loginWindow = new SteamWebLoginWindow();
                 if (loginWindow.ShowDialog() == true)
@@ -234,9 +234,9 @@ namespace RevoltUltimate.Desktop
                 var session = AccountManager.GetSteamSession(savedAccount.Username);
 
                 bootScreen.UpdateStatus($"Logging in as {savedAccount.Username}...");
-                SteamLocal.Instance.SetSessionCookies(session.Item1, session.Item2, savedAccount.Username);
+                SteamScrape.Instance.SetSessionCookies(session.Item1, session.Item2, savedAccount.Username);
 
-                bool sessionIsValid = await SteamLocal.Instance.TryRefreshSessionAsync();
+                bool sessionIsValid = await SteamScrape.Instance.TryRefreshSessionAsync();
 
                 if (sessionIsValid)
                 {
