@@ -1,7 +1,7 @@
-﻿using RevoltUltimate.API.Contracts; // For IAchievementNotifier
+﻿using RevoltUltimate.API.Contracts;
 using RevoltUltimate.API.Objects;
+using System.Media;
 using System.Windows;
-using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 
@@ -9,24 +9,16 @@ namespace RevoltUltimate.Notification
 {
     public partial class AchievementToastWindow : Window, IAchievementNotifier
     {
-        private static readonly Queue<Achievement> _achievementQueue = new Queue<Achievement>();
+        private static readonly Queue<Achievement> _achievementQueue = new();
         private static readonly object _queueLock = new object();
         private static bool _isNotificationVisible = false;
-        private static readonly MediaPlayer AchievementSound = new MediaPlayer();
+        private static readonly SoundPlayer AchievementSound = new(Properties.Resources.achievement);
 
         private Achievement _currentAchievement;
 
         static AchievementToastWindow()
         {
-            try
-            {
-                Uri soundUri = new Uri("pack://application:,,,/RevoltUltimate.Notification;component/Sounds/achievement.wav", UriKind.Absolute);
-                AchievementSound.Open(soundUri);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error loading achievement sound: {ex.Message}");
-            }
+
         }
 
         public AchievementToastWindow()
@@ -79,8 +71,6 @@ namespace RevoltUltimate.Notification
 
             base.Show();
 
-            AchievementSound.Stop();
-            AchievementSound.Position = TimeSpan.Zero;
             AchievementSound.Play();
 
             if (FindResource("EnterStoryboard") is Storyboard enterStoryboard)

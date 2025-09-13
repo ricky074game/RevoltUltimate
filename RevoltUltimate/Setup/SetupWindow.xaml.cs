@@ -24,9 +24,11 @@ namespace RevoltUltimate.Desktop.Setup
             Progress1.DataContext = new ProgressViewModel { IsActive = true };
             Progress2.DataContext = new ProgressViewModel { IsActive = false };
             Progress3.DataContext = new ProgressViewModel { IsActive = false };
+            Progress4.DataContext = new ProgressViewModel { IsActive = false };
+            Progress5.DataContext = new ProgressViewModel { IsActive = false };
 
-            Step2.PfpPreviewContainer.MouseDown += (s, e) => SelectProfilePicture();
-            Step3.Settings = this.appSettings;
+            Step3.PfpPreviewContainer.MouseDown += (s, e) => SelectProfilePicture();
+            Step4.Settings = this.appSettings;
 
             try
             {
@@ -35,6 +37,26 @@ namespace RevoltUltimate.Desktop.Setup
             catch (Exception ex)
             {
                 MessageBox.Show($"Error with setup event: {ex.Message}", "Setup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        public void GoToNextStep()
+        {
+            if (currentStep < 5)
+            {
+                TransitionToStep(currentStep + 1);
+            }
+            else if (currentStep == 5)
+            {
+                FinishSetup();
+            }
+        }
+
+        public void GoToPreviousStep()
+        {
+            if (currentStep > 1)
+            {
+                TransitionToStep(currentStep - 1);
             }
         }
 
@@ -54,46 +76,26 @@ namespace RevoltUltimate.Desktop.Setup
             Application.Current.Shutdown();
         }
 
-        private void GoToStep2(object sender, RoutedEventArgs e)
-        {
-            TransitionToStep(2);
-        }
-
-        private void GoToStep3(object sender, RoutedEventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(Step2.Username))
-            {
-                MessageBox.Show("Please enter a username.", "Username Required", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            TransitionToStep(3);
-        }
-
         private void TransitionToStep(int step)
         {
             var currentStepElement = (UIElement)FindName($"Step{currentStep}");
-            currentStepElement.Visibility = Visibility.Collapsed;
+            if (currentStepElement != null)
+                currentStepElement.Visibility = Visibility.Collapsed;
 
             var newStepElement = (UIElement)FindName($"Step{step}");
-            newStepElement.Visibility = Visibility.Visible;
+            if (newStepElement != null)
+                newStepElement.Visibility = Visibility.Visible;
 
-            if (currentStep < 4)
+            var previousProgress = (Border)FindName($"Progress{currentStep}");
+            if (previousProgress != null && previousProgress.DataContext is ProgressViewModel prevVm)
             {
-                var previousProgress = (Border)FindName($"Progress{currentStep}");
-                if (previousProgress != null && previousProgress.DataContext is ProgressViewModel prevVm)
-                {
-                    prevVm.IsActive = false;
-                }
+                prevVm.IsActive = false;
             }
 
-            if (step < 4)
+            var newProgress = (Border)FindName($"Progress{step}");
+            if (newProgress != null && newProgress.DataContext is ProgressViewModel newVm)
             {
-                var newProgress = (Border)FindName($"Progress{step}");
-                if (newProgress != null && newProgress.DataContext is ProgressViewModel newVm)
-                {
-                    newVm.IsActive = true;
-                }
+                newVm.IsActive = true;
             }
 
             currentStep = step;
@@ -117,7 +119,7 @@ namespace RevoltUltimate.Desktop.Setup
                     bitmap.CacheOption = BitmapCacheOption.OnLoad;
                     bitmap.EndInit();
 
-                    Step2.ProfilePictureSource = bitmap;
+                    Step3.ProfilePictureSource = bitmap;
                 }
                 catch (Exception ex)
                 {
@@ -139,6 +141,10 @@ namespace RevoltUltimate.Desktop.Setup
                 activePlatformBox = platform;
                 ContextMenu.IsOpen = true;
             }
+        }
+        private void NextButton_Click(object sender, RoutedEventArgs e)
+        {
+            GoToNextStep();
         }
 
         private void HideContextMenu(object sender, MouseButtonEventArgs e)
@@ -163,18 +169,12 @@ namespace RevoltUltimate.Desktop.Setup
             ContextMenu.IsOpen = false;
         }
 
-        private void FinishSetup(object sender, RoutedEventArgs e)
+        private void FinishSetup()
         {
-            // Save user data
             SaveUserData();
 
-            // Show completion screen
-            TransitionToStep(4);
-
-            // Signal setup completion
             setupCompleteEvent?.Set();
 
-            // Close the window after a delay
             var timer = new System.Windows.Threading.DispatcherTimer();
             timer.Interval = TimeSpan.FromSeconds(3);
             timer.Tick += (s, args) =>
@@ -189,7 +189,7 @@ namespace RevoltUltimate.Desktop.Setup
         {
             var user = new User
             {
-                UserName = Step2.Username,
+                UserName = Step3.Username,
                 Xp = 0,
                 Games = new List<Game>()
             };
@@ -211,10 +211,10 @@ namespace RevoltUltimate.Desktop.Setup
             var settingsJson = JsonConvert.SerializeObject(this.appSettings, Formatting.Indented);
             File.WriteAllText(settingsFilePath, settingsJson);
 
-            if (Step2.ProfilePictureSource != null)
+            if (Step3.ProfilePictureSource != null)
             {
                 var profilePicPath = Path.Combine(appDataFolder, "profile.jpg");
-                SaveImageToFile(Step2.ProfilePictureSource as BitmapSource, profilePicPath);
+                SaveImageToFile(Step3.ProfilePictureSource as BitmapSource, profilePicPath);
             }
         }
 

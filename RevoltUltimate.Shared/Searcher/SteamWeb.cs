@@ -178,7 +178,7 @@ namespace RevoltUltimate.API.Searcher
                         {
                             imageUrl = $"http://media.steampowered.com/steamcommunity/public/images/apps/{steamGameInfo.AppId}/{steamGameInfo.ImgIconUrl}.jpg";
                         }
-                        var game = new Game(steamGameInfo.Name, "Steam", imageUrl, "", "Steam Web API");
+                        var game = new Game(steamGameInfo.Name, "Steam", imageUrl, "", "Steam Web API", (int)steamGameInfo.AppId);
                         var achievements = await GetAchievementsForGameAsync(steamGameInfo.AppId);
                         if (achievements != null)
                         {
@@ -212,6 +212,8 @@ namespace RevoltUltimate.API.Searcher
                 }
 
                 var playerAchievementsResponse = await _steamUserStats.GetPlayerAchievementsAsync(uAppId, _steamId64);
+                var globalPercentagesResponse = await _steamUserStats.GetGlobalAchievementPercentagesForAppAsync(uAppId);
+                var globalPercentages = globalPercentagesResponse?.Data?.ToDictionary(p => p.Name, p => p.Percent);
 
                 if (playerAchievementsResponse?.Data?.Achievements != null)
                 {
@@ -239,6 +241,12 @@ namespace RevoltUltimate.API.Searcher
                             }
                         }
 
+                        float globalPercentage = 0;
+                        if (globalPercentages != null && globalPercentages.TryGetValue(schemaAch.Name, out double percentage))
+                        {
+                            globalPercentage = (float)percentage;
+                        }
+
                         var achievement = new Achievement(
                             schemaAch.DisplayName,
                             schemaAch.Description,
@@ -251,7 +259,8 @@ namespace RevoltUltimate.API.Searcher
                             schemaAch.Name,
                             hasProgress,
                             currentProgress,
-                            maxProgress
+                            maxProgress,
+                            globalPercentage
                         );
                         achievements.Add(achievement);
                     }

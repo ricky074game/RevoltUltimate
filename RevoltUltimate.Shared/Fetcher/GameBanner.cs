@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.IO;
 using System.Net.Http;
-using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -121,9 +121,10 @@ namespace RevoltUltimate.API.Fetcher
 
                     var content = await response.Content.ReadAsStringAsync();
                     var json = JsonConvert.DeserializeObject<dynamic>(content);
-                    if (json.data != null && json.data.Count > 0)
+                    var data = json["data"] as JArray;
+                    if (data != null && data.Count > 0)
                     {
-                        var gameId = json.data[0].id;
+                        var gameId = data[0]["id"];
 
                         var gridRequest = new HttpRequestMessage(
                             HttpMethod.Get,
@@ -135,9 +136,10 @@ namespace RevoltUltimate.API.Fetcher
 
                         var gridContent = await gridResponse.Content.ReadAsStringAsync();
                         var gridJson = JsonConvert.DeserializeObject<dynamic>(gridContent);
-                        if (gridJson.data != null && gridJson.data.Count > 0)
+                        data = gridJson["data"] as JArray;
+                        if (data != null && data.Count > 0)
                         {
-                            bannerUrl = gridJson.data[0].url;
+                            bannerUrl = data[0]["url"]?.ToString();
                             if (!string.IsNullOrEmpty(bannerUrl))
                             {
                                 await SaveUrlToCacheAsync(gameName, bannerUrl);

@@ -9,9 +9,11 @@ namespace RevoltUltimate.API.Objects
         public string imageUrl { get; private set; }
         public string description { get; private set; }
         public string method { get; private set; }
+
+        public int appid { get; private set; }
         public List<Achievement> achievements { get; private set; }
 
-        public Game(string name, string platform, string imageUrl, string description, string method)
+        public Game(string name, string platform, string imageUrl, string description, string method, int appid)
         {
             this.name = name;
             this.platform = platform;
@@ -19,6 +21,7 @@ namespace RevoltUltimate.API.Objects
             this.description = description;
             this.method = method;
             this.achievements = new List<Achievement>();
+            this.appid = appid;
         }
 
         [JsonConstructor]
@@ -28,7 +31,8 @@ namespace RevoltUltimate.API.Objects
             string ImageUrl,
             string Description,
             string Method,
-            List<Achievement> Achievements)
+            List<Achievement> Achievements,
+            int AppId)
         {
             this.name = Name;
             this.platform = Platform;
@@ -36,6 +40,7 @@ namespace RevoltUltimate.API.Objects
             this.description = Description;
             this.method = Method;
             this.achievements = Achievements;
+            this.appid = AppId;
         }
 
         public void AddAchievement(Achievement achievement)

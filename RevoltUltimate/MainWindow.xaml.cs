@@ -65,7 +65,8 @@ namespace RevoltUltimate.Desktop
 
             try
             {
-                var iconUri = new Uri("pack://application:,,,/images/RoninLogo.png");
+                var iconUri = new Uri("pack://application:,,,/images/RoninLogo.ico");
+                BitmapImage bitmap = new BitmapImage(iconUri);
                 _taskbarIcon.IconSource = new BitmapImage(iconUri);
             }
             catch (Exception ex)
@@ -165,7 +166,7 @@ namespace RevoltUltimate.Desktop
                         Update updater = null;
                         if (game.method.Equals("Steam Local", StringComparison.OrdinalIgnoreCase))
                         {
-                            updater = new SteamScrapeUpdate();
+                            updater = new SteamLocalUpdate();
                         }
                         else if (game.method.Equals("Steam Web API", StringComparison.OrdinalIgnoreCase))
                         {
@@ -452,8 +453,20 @@ namespace RevoltUltimate.Desktop
                         NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed, "An unexpected error occurred.");
                     }
                 }
-                CurrentUser.Games = allGames;
-                AddSelectGamesToGrid(allGames);
+
+                foreach (var game in allGames)
+                {
+                    bool gameExistsInCurrentUser = CurrentUser.Games.Any(g =>
+                        g.name.Equals(game.name, StringComparison.OrdinalIgnoreCase) &&
+                        g.platform.Equals(game.platform, StringComparison.OrdinalIgnoreCase));
+
+                    if (!gameExistsInCurrentUser)
+                    {
+                        CurrentUser.Games.Add(game);
+                    }
+                }
+
+                AddSelectGamesToGrid(CurrentUser.Games);
             }
         }
 

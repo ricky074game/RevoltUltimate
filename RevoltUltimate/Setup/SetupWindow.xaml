@@ -41,13 +41,22 @@
                             BorderBrush="{Binding IsActive, Converter={StaticResource ProgressBorderBrushConverter}}" BorderThickness="3">
                         <TextBlock Text="3" Foreground="White" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                     </Border>
+                    <Border x:Name="Progress4" Width="40" Height="40" CornerRadius="20" Background="#4a5568" Margin="10"
+                            BorderBrush="{Binding IsActive, Converter={StaticResource ProgressBorderBrushConverter}}" BorderThickness="3">
+                        <TextBlock Text="4" Foreground="White" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    </Border>
+                    <Border x:Name="Progress5" Width="40" Height="40" CornerRadius="20" Background="#4a5568" Margin="10"
+                            BorderBrush="{Binding IsActive, Converter={StaticResource ProgressBorderBrushConverter}}" BorderThickness="3">
+                        <TextBlock Text="5" Foreground="White" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    </Border>
                 </StackPanel>
 
                 <Grid Grid.Row="2">
-                    <steps:WelcomeStep x:Name="Step1" Visibility="Visible" GoToNextStep="GoToStep2"/>
-                    <steps:ProfileStep x:Name="Step2" Visibility="Collapsed" GoToNextStep="GoToStep3"/>
-                    <steps:LinkAccountsStep x:Name="Step3" Visibility="Collapsed" GoToNextStep="FinishSetup"/>
-                    <steps:CompletionStep x:Name="Step4" Visibility="Collapsed"/>
+                    <steps:WelcomeStep x:Name="Step1" Visibility="Visible" GoToNextStep="NextButton_Click"/>
+                    <steps:DownloadStep x:Name="Step2" Visibility="Collapsed"/>
+                    <steps:ProfileStep x:Name="Step3" Visibility="Collapsed" GoToNextStep="NextButton_Click"/>
+                    <steps:LinkAccountsStep x:Name="Step4" Visibility="Collapsed" GoToNextStep="NextButton_Click"/>
+                    <steps:CompletionStep x:Name="Step5" Visibility="Collapsed"/>
                 </Grid>
             </Grid>
         </Border>

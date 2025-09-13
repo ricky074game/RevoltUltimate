@@ -13,6 +13,7 @@
     <None Remove="Images\bell.png" />
     <None Remove="Images\circle.gif" />
     <None Remove="Images\profilepic.png" />
+    <None Remove="Images\RoninLogo.ico" />
     <None Remove="Images\RoninLogo.png" />
     <None Remove="Images\unknown.jpg" />
   </ItemGroup>
@@ -41,6 +42,9 @@
     </Resource>
     <Resource Include="Images\profilepic.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Images\RoninLogo.ico">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Images\RoninLogo.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>

@@ -8,10 +8,10 @@ using System.Text.RegularExpressions;
 
 namespace RevoltUltimate.API.Searcher
 {
-    public class SteamLocal
+    public class SteamScrape
     {
-        private static SteamLocal _instance;
-        public static SteamLocal Instance => _instance ??= new SteamLocal();
+        private static SteamScrape _instance;
+        public static SteamScrape Instance => _instance ??= new SteamScrape();
 
         private readonly HttpClient _httpClient;
         private readonly CookieContainer _cookieContainer;
@@ -21,7 +21,7 @@ namespace RevoltUltimate.API.Searcher
 
         public Func<Tuple<string, string>> ShowLoginWindow { get; set; }
 
-        public SteamLocal()
+        public SteamScrape()
         {
             _cookieContainer = new CookieContainer();
             var handler = new HttpClientHandler { CookieContainer = _cookieContainer };
@@ -33,7 +33,7 @@ namespace RevoltUltimate.API.Searcher
         {
             if (!_isLoggedIn || string.IsNullOrEmpty(_username))
             {
-                System.Diagnostics.Debug.WriteLine("SteamLocal: Cannot refresh session, user not logged in.");
+                System.Diagnostics.Debug.WriteLine("SteamScrape: Cannot refresh session, user not logged in.");
                 return false;
             }
 
@@ -44,7 +44,7 @@ namespace RevoltUltimate.API.Searcher
 
                 if (response.RequestMessage.RequestUri.ToString().Contains("login"))
                 {
-                    System.Diagnostics.Debug.WriteLine("SteamLocal: Session is invalid, clearing credentials.");
+                    System.Diagnostics.Debug.WriteLine("SteamScrape: Session is invalid, clearing credentials.");
                     Disconnect();
                     return false;
                 }
@@ -56,14 +56,14 @@ namespace RevoltUltimate.API.Searcher
                 if (!string.IsNullOrEmpty(newSessionId) && !string.IsNullOrEmpty(newSteamLoginSecure))
                 {
                     AccountManager.SaveSteamSession(_username, newSessionId, newSteamLoginSecure);
-                    System.Diagnostics.Debug.WriteLine("SteamLocal: Session refreshed and saved successfully.");
+                    System.Diagnostics.Debug.WriteLine("SteamScrape: Session refreshed and saved successfully.");
                 }
 
                 return true;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"SteamLocal: Error refreshing session: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"SteamScrape: Error refreshing session: {ex.Message}");
                 Disconnect();
                 return false;
             }
@@ -89,7 +89,7 @@ namespace RevoltUltimate.API.Searcher
         {
             if (!_isLoggedIn)
             {
-                System.Diagnostics.Debug.WriteLine("SteamLocal: Cannot get profile info, user is not logged in.");
+                System.Diagnostics.Debug.WriteLine("SteamScrape: Cannot get profile info, user is not logged in.");
                 return false;
             }
 
@@ -104,7 +104,7 @@ namespace RevoltUltimate.API.Searcher
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine("SteamLocal: Could not find SteamID on profile page.");
+                    System.Diagnostics.Debug.WriteLine("SteamScrape: Could not find SteamID on profile page.");
                     return false;
                 }
 
@@ -115,16 +115,16 @@ namespace RevoltUltimate.API.Searcher
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine("SteamLocal: Could not find Persona Name on profile page.");
+                    System.Diagnostics.Debug.WriteLine("SteamScrape: Could not find Persona Name on profile page.");
                     return false;
                 }
 
-                System.Diagnostics.Debug.WriteLine($"SteamLocal: Found SteamID: {_steamId64}, Username: {_username}");
+                System.Diagnostics.Debug.WriteLine($"SteamScrape: Found SteamID: {_steamId64}, Username: {_username}");
                 return true;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"SteamLocal: Error fetching profile page to get info: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"SteamScrape: Error fetching profile page to get info: {ex.Message}");
                 return false;
             }
         }
@@ -133,7 +133,7 @@ namespace RevoltUltimate.API.Searcher
         {
             if (string.IsNullOrEmpty(_steamId64) && !(await FetchAndSetProfileInfoAsync()))
             {
-                System.Diagnostics.Debug.WriteLine("SteamLocal: Not logged in or profile info not found, cannot get owned games.");
+                System.Diagnostics.Debug.WriteLine("SteamScrape: Not logged in or profile info not found, cannot get owned games.");
                 return new List<Game>();
             }
 
@@ -168,25 +168,25 @@ namespace RevoltUltimate.API.Searcher
 
                             if (!string.IsNullOrEmpty(name))
                             {
-                                var game = new Game(name, "Steam", logoUrl, $"Steam App {appId}", "Steam Local");
+                                var game = new Game(name, "Steam", logoUrl, $"Steam App {appId}", "Steam Local", int.Parse(appId));
                                 games.Add(game);
                             }
                         }
-                        System.Diagnostics.Debug.WriteLine($"SteamLocal: Successfully parsed {games.Count} games from profile page.");
+                        System.Diagnostics.Debug.WriteLine($"SteamScrape: Successfully parsed {games.Count} games from profile page.");
                     }
                     else
                     {
-                        System.Diagnostics.Debug.WriteLine("SteamLocal: 'rgGames' JSON array not found or is not an array.");
+                        System.Diagnostics.Debug.WriteLine("SteamScrape: 'rgGames' JSON array not found or is not an array.");
                     }
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine("SteamLocal: Could not find gameslist_config JSON on the games page.");
+                    System.Diagnostics.Debug.WriteLine("SteamScrape: Could not find gameslist_config JSON on the games page.");
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"SteamLocal: Error fetching or parsing owned games: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"SteamScrape: Error fetching or parsing owned games: {ex.Message}");
             }
             foreach (var game in games)
             {
@@ -200,7 +200,7 @@ namespace RevoltUltimate.API.Searcher
         {
             if (string.IsNullOrEmpty(_steamId64) && !(await FetchAndSetProfileInfoAsync()))
             {
-                System.Diagnostics.Debug.WriteLine("SteamLocal: Not logged in or profile info not found, cannot get achievements.");
+                System.Diagnostics.Debug.WriteLine("SteamScrape: Not logged in or profile info not found, cannot get achievements.");
                 return new List<Achievement>();
             }
 
@@ -216,7 +216,7 @@ namespace RevoltUltimate.API.Searcher
                 var achievementNodes = doc.DocumentNode.SelectNodes("//div[@class='achieveRow']");
                 if (achievementNodes == null)
                 {
-                    System.Diagnostics.Debug.WriteLine($"SteamLocal: No achievement rows found for AppID {appId}. The game might not have achievements or the profile is private.");
+                    System.Diagnostics.Debug.WriteLine($"SteamScrape: No achievement rows found for AppID {appId}. The game might not have achievements or the profile is private.");
                     return achievements;
                 }
 
@@ -250,6 +250,15 @@ namespace RevoltUltimate.API.Searcher
                         }
                     }
 
+                    // Scrape global percentage
+                    var globalPercentageNode = node.SelectSingleNode(".//div[contains(@class, 'achievePercent')]");
+                    float globalPercentage = 0;
+                    if (globalPercentageNode != null)
+                    {
+                        var percentageText = globalPercentageNode.InnerText.Trim().Replace("%", "");
+                        float.TryParse(percentageText, out globalPercentage);
+                    }
+
                     bool hidden = description.Contains("revealed once unlocked");
                     if (!string.IsNullOrEmpty(name))
                     {
@@ -265,16 +274,17 @@ namespace RevoltUltimate.API.Searcher
                             apiName: "", // Not available via scraping
                             progress: hasProgress,
                             currentProgress: currentProgress,
-                            maxProgress: maxProgress
+                            maxProgress: maxProgress,
+                            getglobalpercentage: globalPercentage
                         );
                         achievements.Add(achievement);
                     }
                 }
-                System.Diagnostics.Debug.WriteLine($"SteamLocal: Successfully parsed {achievements.Count} achievements for AppID {appId}.");
+                System.Diagnostics.Debug.WriteLine($"SteamScrape: Successfully parsed {achievements.Count} achievements for AppID {appId}.");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"SteamLocal: Error fetching or parsing achievements for AppID {appId}: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"SteamScrape: Error fetching or parsing achievements for AppID {appId}: {ex.Message}");
             }
 
             return achievements;
@@ -292,7 +302,7 @@ namespace RevoltUltimate.API.Searcher
             _username = null;
             _cookieContainer.Add(new Cookie("steamLoginSecure", DateTime.Now.AddDays(-1).ToString(), "/", ".steamcommunity.com"));
             _cookieContainer.Add(new Cookie("sessionid", DateTime.Now.AddDays(-1).ToString(), "/", ".steamcommunity.com"));
-            System.Diagnostics.Debug.WriteLine("SteamLocal: User logged out, cookies cleared and stored session deleted.");
+            System.Diagnostics.Debug.WriteLine("SteamScrape: User logged out, cookies cleared and stored session deleted.");
         }
     }
 }

@@ -114,7 +114,8 @@ namespace RevoltUltimate.Desktop.Options
                 "Test",
                 false,
                 1,
-                1
+                1,
+                100.0f
             );
 
             AchievementWindow.ShowNotification(testAchievement, dllPath);

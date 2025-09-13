@@ -18,6 +18,8 @@
         public int currentProgress { get; private set; }
         public int maxProgress { get; private set; }
 
+        public float getglobalpercentage { get; private set; }
+
         public void SetUnlockedStatus(bool isUnlocked, string dateTime)
         {
             this.unlocked = isUnlocked;
@@ -26,7 +28,7 @@
 
 
         public Achievement(string Name, string Description, string ImageUrl, bool Hidden, int Id, bool Unlocked,
-            string DateTimeUnlocked, int Difficulty, string apiName, bool progress, int currentProgress, int maxProgress)
+            string DateTimeUnlocked, int Difficulty, string apiName, bool progress, int currentProgress, int maxProgress, float getglobalpercentage)
         {
             name = Name;
             description = Description;
@@ -41,6 +43,7 @@
             this.progress = progress;
             this.currentProgress = currentProgress;
             this.maxProgress = maxProgress;
+            this.getglobalpercentage = getglobalpercentage;
         }
     }
 }

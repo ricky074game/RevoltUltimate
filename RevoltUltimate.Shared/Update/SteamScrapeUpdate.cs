@@ -26,11 +26,13 @@ namespace RevoltUltimate.API.Update
                 return newlyEarned;
             }
 
-            var latestAchievements = await SteamLocal.Instance.GetPlayerAchievementsAsync(appId);
+            var latestAchievements = await SteamScrape.Instance.GetPlayerAchievementsAsync(appId);
 
             if (latestAchievements != null)
             {
-                var existingAchievements = game.achievements.ToDictionary(a => a.name);
+                var existingAchievements = game.achievements
+                    .GroupBy(a => a.name)
+                    .ToDictionary(g => g.Key, g => g.First());
 
                 foreach (var latestAchievement in latestAchievements)
                 {
