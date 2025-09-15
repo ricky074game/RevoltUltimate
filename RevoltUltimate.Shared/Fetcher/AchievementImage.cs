@@ -25,15 +25,24 @@ namespace RevoltUltimate.API.Fetcher
 
         public Image<Rgba32>? GetProcessedImage(string imageUrl, bool unlocked, bool hidden)
         {
-            string cacheFilePath = GetCachedImagePath(imageUrl);
-            if (cacheFilePath == null)
-            {
-                return null;
-            }
+            string cacheFilePath;
 
-            if (!File.Exists(cacheFilePath))
+            if (File.Exists(imageUrl))
             {
-                DownloadImage(imageUrl, cacheFilePath);
+                cacheFilePath = imageUrl;
+            }
+            else
+            {
+                cacheFilePath = GetCachedImagePath(imageUrl);
+                if (cacheFilePath == null)
+                {
+                    return null;
+                }
+
+                if (!File.Exists(cacheFilePath))
+                {
+                    DownloadImage(imageUrl, cacheFilePath);
+                }
             }
 
             return ProcessImage(cacheFilePath, unlocked, hidden);

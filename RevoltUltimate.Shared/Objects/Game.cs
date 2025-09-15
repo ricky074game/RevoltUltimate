@@ -1,17 +1,18 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Extensions.Primitives;
+using Newtonsoft.Json;
 
 namespace RevoltUltimate.API.Objects
 {
     public class Game
     {
-        public string name { get; private set; }
-        public string platform { get; private set; }
-        public string imageUrl { get; private set; }
-        public string description { get; private set; }
-        public string method { get; private set; }
+        public string name { get; set; }
+        public string platform { get; set; }
+        public string imageUrl { get;  set; }
+        public string description { get; set; }
+        public string method { get; set; }
 
-        public int appid { get; private set; }
-        public List<Achievement> achievements { get; private set; }
+        public int appid { get; set; }
+        public List<Achievement> achievements { get; set; }
 
         public Game(string name, string platform, string imageUrl, string description, string method, int appid)
         {

@@ -7,6 +7,9 @@
              d:DesignHeight="270" d:DesignWidth="180"
              Unloaded="GameShow_Unloaded"
              MouseLeftButtonUp="GameShow_MouseLeftButtonUp">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </UserControl.Resources>
     <Grid>
         <Border x:Name="AchievementBorder" BorderThickness="3" CornerRadius="10" Padding="2">
             <Border.Effect>
@@ -34,6 +37,21 @@
                                TextAlignment="Center"
                                TextWrapping="Wrap"/>
                 </StackPanel>
+                <Border.ContextMenu>
+                    <ContextMenu Style="{DynamicResource SharedContextMenuStyle}">
+                        <ContextMenu.Resources>
+                            <Style TargetType="MenuItem" BasedOn="{StaticResource SharedMenuItemStyle}"/>
+                            <Style TargetType="Separator" BasedOn="{StaticResource SharedSeparatorStyle}"/>
+                        </ContextMenu.Resources>
+                        <MenuItem Header="Set Game Banner" Click="SetBanner_Click"/>
+                        <MenuItem Header="Change Title" Click="ChangeTitle_Click"/>
+                        <MenuItem Header="Change Description" Click="ChangeDescription_Click"/>
+                        <Separator/>
+                        <MenuItem Header="Generate achievement.json" Click="GenerateJson_Click" Visibility="{Binding IsSteamPirated, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        <MenuItem Header="Select achievement.json" Click="SelectJson_Click" Visibility="{Binding IsSteamPirated, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        <MenuItem Header="Select track file" Click="SelectTrackFile_Click" Visibility="{Binding IsSteamPirated, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    </ContextMenu>
+                </Border.ContextMenu>
             </Border>
         </Border>
         <Canvas x:Name="SparkleCanvas" IsHitTestVisible="False"/>

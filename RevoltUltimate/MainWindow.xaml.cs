@@ -6,6 +6,7 @@ using RevoltUltimate.API.Objects;
 using RevoltUltimate.API.Searcher;
 using RevoltUltimate.API.Update;
 using RevoltUltimate.Desktop.Pages;
+using RevoltUltimate.Desktop.Windows;
 using System.IO;
 using System.Net.Http;
 using System.Windows;
@@ -22,7 +23,8 @@ namespace RevoltUltimate.Desktop
     {
         private readonly String _userFilePath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData), "RevoltUltimate", "user.json");
         private User CurrentUser => App.CurrentUser;
-        private readonly String _settingsFilePath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData), "RevoltUltimate", "settings.json"); // Added settings file path
+        private readonly String _settingsFilePath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData), "RevoltUltimate", "settings.json");
+        private ConsoleWindow _consoleWindow;
 
         private TaskbarIcon _taskbarIcon;
         public string ProfilePicturePath { get; set; }
@@ -46,7 +48,7 @@ namespace RevoltUltimate.Desktop
             {
                 ProfilePicturePath = "Images/profilePic.png";
             }
-
+            ConsoleMenuItem.Visibility = App.IsDebugMode ? Visibility.Visible : Visibility.Collapsed;
             DataContext = this;
             NotificationViewModel = new NotificationViewModel();
             NotificationSystem.DataContext = NotificationViewModel;
@@ -122,7 +124,19 @@ namespace RevoltUltimate.Desktop
             this.Activate();
             this.ShowInTaskbar = true;
         }
-
+        private void Console_Click(object sender, RoutedEventArgs e)
+        {
+            if (_consoleWindow == null || !_consoleWindow.IsLoaded)
+            {
+                _consoleWindow = new ConsoleWindow();
+                _consoleWindow.Owner = this;
+                _consoleWindow.Show();
+            }
+            else
+            {
+                _consoleWindow.Activate();
+            }
+        }
         private void PerformCloseAction()
         {
             _isExplicitlyClosing = true;
@@ -213,7 +227,7 @@ namespace RevoltUltimate.Desktop
             }
         }
 
-        private void Save()
+        public void Save()
         {
             try
             {
@@ -245,7 +259,6 @@ namespace RevoltUltimate.Desktop
         {
             int currentXp = CurrentUser.GetXpForCurrentLevel();
             int maxXp = CurrentUser.GetXpForNextLevel();
-            System.Diagnostics.Debug.WriteLine(maxXp);
             XpProgressBar.Maximum = maxXp;
             XpProgressBar.Value = currentXp;
             UpdateLevelAndTooltipText();
@@ -466,8 +479,24 @@ namespace RevoltUltimate.Desktop
                     }
                 }
 
-                AddSelectGamesToGrid(CurrentUser.Games);
+                AddSelectGamesToGrid(allGames);
             }
+        }
+        public void AddGame(Game game)
+        {
+            if (CurrentUser.Games.Any(g => g.name.Equals(game.name, StringComparison.OrdinalIgnoreCase)))
+            {
+                var existingGame = CurrentUser.Games.First(g => g.name.Equals(game.name, StringComparison.OrdinalIgnoreCase));
+                existingGame.achievements = game.achievements;
+            }
+            else
+            {
+                CurrentUser.Games.Add(game);
+            }
+
+            _gamesGrid.Children.Clear();
+            AddSelectGamesToGrid(CurrentUser.Games);
+            Save();
         }
 
         private void AddSelectGamesToGrid(List<Game> games)
@@ -480,7 +509,9 @@ namespace RevoltUltimate.Desktop
             }
             foreach (var game in games)
             {
-                if (_gamesGrid.Children.OfType<GameShow>().Any(g => g.DataContext is Game existingGame && existingGame.name == game.name && existingGame.platform == game.platform))
+                if (_gamesGrid.Children.OfType<GameShow>().Any(g => g.DataContext is Game existingGame
+                                                                    && existingGame.name.Equals(game.name, StringComparison.OrdinalIgnoreCase)
+                                                                    && existingGame.platform.Equals(game.platform, StringComparison.OrdinalIgnoreCase)))
                 {
                     continue;
                 }
@@ -490,6 +521,7 @@ namespace RevoltUltimate.Desktop
             }
             Save();
         }
+
 
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)

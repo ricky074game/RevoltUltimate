@@ -1,9 +1,9 @@
-﻿using RevoltUltimate.Desktop.Options;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using RevoltUltimate.Desktop.Options;
 
-namespace RevoltUltimate.Desktop.Pages
+namespace RevoltUltimate.Desktop.Windows
 {
     public partial class OptionsWindow : Window
     {

@@ -18,6 +18,8 @@ namespace RevoltUltimate.Desktop
 
         private static readonly byte[] Entropy = { 1, 4, 8, 2, 5 };
 
+        public List<String> WatchedFolders { get; set; }
+
 
         public string? SteamApiKey
         {

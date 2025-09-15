@@ -1,9 +1,13 @@
 ﻿using Newtonsoft.Json;
 using RevoltUltimate.API.Accounts;
+using RevoltUltimate.API.Contracts;
 using RevoltUltimate.API.Objects;
 using RevoltUltimate.API.Searcher;
+using RevoltUltimate.API.Update;
 using RevoltUltimate.Desktop.Setup;
 using RevoltUltimate.Desktop.Setup.Steam;
+using RevoltUltimate.Desktop.Windows;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
@@ -14,17 +18,31 @@ namespace RevoltUltimate.Desktop
     {
         public static User? CurrentUser { get; set; }
         private static string SettingsFilePath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RevoltUltimate", "settings.json");
+        public static bool IsDebugMode { get; private set; }
+        public static GameWatcherService GameWatcher { get; private set; }
 
         private static string UserFilePath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RevoltUltimate", "user.json");
         private const string SetupCompleteEventName = "RevoltUltimateSetupCompleteEvent";
         public static ApplicationSettings? Settings { get; private set; }
         private const string CurrentSettingsVersion = "0.1";
         private DispatcherTimer _sessionRefreshTimer;
+        private static TextBoxTraceListener _globalTraceListener;
+        private GameWatcherService? _gameWatcherService;
 
 
         private async void Application_Startup(object sender, StartupEventArgs e)
         {
-            this.ShutdownMode = ShutdownMode.OnMainWindowClose;
+#if DEBUG
+            IsDebugMode = true;
+#endif
+            if (e.Args.Contains("/debug"))
+            {
+                IsDebugMode = true;
+            }
+            _globalTraceListener = new TextBoxTraceListener();
+            Trace.Listeners.Add(_globalTraceListener);
+            Trace.WriteLine("Application has begun startup.");
+            ShutdownMode = ShutdownMode.OnMainWindowClose;
             var bootScreen = new BootScreen();
             bootScreen.Show();
 
@@ -49,11 +67,15 @@ namespace RevoltUltimate.Desktop
 
                 await SetupLinkers(bootScreen);
 
+                bootScreen.UpdateProgress(90);
+                bootScreen.UpdateStatus("Checking for updates...");
+                await CheckForUpdates(bootScreen);
+
                 MainWindow mainWindow = new MainWindow();
-                this.MainWindow = mainWindow;
+                MainWindow = mainWindow;
+                mainWindow.Loaded += MainWindow_Loaded; // Subscribe to the Loaded event
                 mainWindow.Show();
                 bootScreen.Close();
-
             }
             catch (Exception ex)
             {
@@ -63,6 +85,23 @@ namespace RevoltUltimate.Desktop
             }
         }
 
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            Trace.WriteLine("MainWindow loaded. Initializing GameWatcherService.");
+            _gameWatcherService = new GameWatcherService();
+            _gameWatcherService.GameDataFound += OnGameDataFound;
+            if (Settings?.WatchedFolders != null && Settings.WatchedFolders.Any())
+            {
+                _gameWatcherService.StartWatching(Settings.WatchedFolders);
+            }
+        }
+
+        private async Task CheckForUpdates(BootScreen bootScreen)
+        {
+            var downloader = new GitDownloader();
+            var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "RevoltAchievement");
+            await Task.Run(() => downloader.PullLatestChanges(localPath));
+        }
         private void SetupSessionRefreshTimer()
         {
             _sessionRefreshTimer = new DispatcherTimer
@@ -71,7 +110,7 @@ namespace RevoltUltimate.Desktop
             };
             _sessionRefreshTimer.Tick += async (s, e) =>
             {
-                System.Diagnostics.Debug.WriteLine("Timer Ticked: Attempting to refresh Steam session.");
+                Debug.WriteLine("Timer Ticked: Attempting to refresh Steam session.");
                 await SteamScrape.Instance.TryRefreshSessionAsync();
             };
             _sessionRefreshTimer.Start();
@@ -89,7 +128,7 @@ namespace RevoltUltimate.Desktop
 
                     if (Settings != null && Settings.Version == CurrentSettingsVersion)
                     {
-                        System.Diagnostics.Debug.WriteLine("Settings loaded successfully.");
+                        Debug.WriteLine("Settings loaded successfully.");
                     }
                     else if (Settings != null && Settings.Version != CurrentSettingsVersion)
                     {
@@ -115,12 +154,28 @@ namespace RevoltUltimate.Desktop
 
         private void ResetToDefaultSettings()
         {
+            var defaultFolders = new List<string>
+            {
+                Environment.ExpandEnvironmentVariables(@"%PUBLIC%\Documents\Steam\CODEX"),
+                Environment.ExpandEnvironmentVariables(@"%APPDATA%\Goldberg SteamEmu Saves"),
+                Environment.ExpandEnvironmentVariables(@"%APPDATA%\EMPRESS"),
+                Environment.ExpandEnvironmentVariables(@"%PUBLIC%\EMPRESS"),
+                Environment.ExpandEnvironmentVariables(@"%APPDATA%\Steam\Codex"),
+                Environment.ExpandEnvironmentVariables(@"%PROGRAMDATA%\Steam"),
+                Environment.ExpandEnvironmentVariables(@"%LOCALAPPDATA%\SKIDROW"),
+                Environment.ExpandEnvironmentVariables(@"%USERPROFILE%\Documents\SkidRow"),
+                Environment.ExpandEnvironmentVariables(@"%APPDATA%\SmartSteamEmu"),
+                Environment.ExpandEnvironmentVariables(@"%APPDATA%\CreamAPI"),
+                Environment.ExpandEnvironmentVariables(@"%APPDATA%\GSE Saves")
+            };
+
             Settings = new ApplicationSettings
             {
                 Version = CurrentSettingsVersion,
                 SteamApiKey = null,
                 SteamId = null,
-                CustomAnimationDllPath = null
+                CustomAnimationDllPath = null,
+                WatchedFolders = defaultFolders.Distinct(StringComparer.OrdinalIgnoreCase).ToList()
             };
 
             SaveSettings();
@@ -140,15 +195,16 @@ namespace RevoltUltimate.Desktop
                 {
                     string json = JsonConvert.SerializeObject(Settings, Formatting.Indented);
                     File.WriteAllText(SettingsFilePath, json);
-                    System.Diagnostics.Debug.WriteLine("Settings saved successfully.");
+                    Debug.WriteLine("Settings saved successfully.");
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error saving settings: {ex.Message}");
+                Debug.WriteLine($"Error saving settings: {ex.Message}");
                 MessageBox.Show($"Failed to save settings: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+        public static TextBoxTraceListener GlobalTraceListener => _globalTraceListener;
 
 
         private async Task RunSetup(BootScreen bootScreen)
@@ -240,7 +296,7 @@ namespace RevoltUltimate.Desktop
 
                 if (sessionIsValid)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Successfully logged in as {savedAccount.Username}.");
+                    Debug.WriteLine($"Successfully logged in as {savedAccount.Username}.");
                     SetupSessionRefreshTimer();
                 }
                 else
@@ -250,8 +306,49 @@ namespace RevoltUltimate.Desktop
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine("No saved Steam account found.");
+                Debug.WriteLine("No saved Steam account found.");
             }
+        }
+        private void OnGameDataFound(Game foundGame)
+        {
+            Current.Dispatcher.Invoke(() =>
+            {
+                if (!(Current.MainWindow is MainWindow { IsLoaded: true } mainWindow))
+                {
+                    Trace.WriteLine("OnGameDataFound fired but MainWindow is not ready. Aborting.");
+                    return;
+                }
+
+                var existingGame = CurrentUser.Games.FirstOrDefault(g => g.appid == foundGame.appid);
+                if (existingGame == null)
+                {
+                    CurrentUser.Games.Add(foundGame);
+                    existingGame = foundGame;
+                    mainWindow.AddGame(foundGame);
+                }
+
+                bool changed = false;
+                var existingAchievements = existingGame.achievements.ToDictionary(a => a.apiName);
+
+                foreach (var newAchievement in foundGame.achievements)
+                {
+                    if (newAchievement.unlocked)
+                    {
+                        if (!existingAchievements.TryGetValue(newAchievement.apiName, out var existingAchievement) || !existingAchievement.unlocked)
+                        {
+                            AchievementWindow.ShowNotification(newAchievement, App.Settings.CustomAnimationDllPath);
+                            changed = true;
+                        }
+                    }
+                }
+
+                existingGame.achievements = foundGame.achievements;
+
+                if (changed)
+                {
+                    mainWindow.Save();
+                }
+            });
         }
 
         private void LoadUser()
@@ -286,6 +383,12 @@ namespace RevoltUltimate.Desktop
                 System.Diagnostics.Debug.WriteLine("User data file not found. Resetting CurrentUser to null.");
                 CurrentUser = null;
             }
+        }
+
+        protected override void OnExit(ExitEventArgs e)
+        {
+            _gameWatcherService?.StopWatching();
+            base.OnExit(e);
         }
     }
 }

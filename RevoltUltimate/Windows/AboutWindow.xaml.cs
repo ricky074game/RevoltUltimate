@@ -1,10 +1,10 @@
-﻿using RevoltUltimate.API.Update;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
+using RevoltUltimate.API.Update;
 
-namespace RevoltUltimate.Desktop.Pages
+namespace RevoltUltimate.Desktop.Windows
 {
     public partial class AboutWindow : Window, INotifyPropertyChanged
     {

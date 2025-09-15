@@ -46,7 +46,7 @@ namespace RevoltUltimate.Desktop.Setup
             {
                 TransitionToStep(currentStep + 1);
             }
-            else if (currentStep == 5)
+            if (currentStep == 5)
             {
                 FinishSetup();
             }
@@ -206,7 +206,22 @@ namespace RevoltUltimate.Desktop.Setup
             var userFilePath = Path.Combine(appDataFolder, "user.json");
             var userJson = JsonConvert.SerializeObject(user, Formatting.Indented);
             File.WriteAllText(userFilePath, userJson);
-
+            var defaultFolders = new List<string>
+            {
+                Environment.ExpandEnvironmentVariables(@"%PUBLIC%\Documents\Steam\CODEX"),
+                Environment.ExpandEnvironmentVariables(@"%APPDATA%\Goldberg SteamEmu Saves"),
+                Environment.ExpandEnvironmentVariables(@"%APPDATA%\EMPRESS"),
+                Environment.ExpandEnvironmentVariables(@"%PUBLIC%\EMPRESS"),
+                Environment.ExpandEnvironmentVariables(@"%APPDATA%\Steam\Codex"),
+                Environment.ExpandEnvironmentVariables(@"%PROGRAMDATA%\Steam"),
+                Environment.ExpandEnvironmentVariables(@"%LOCALAPPDATA%\SKIDROW"),
+                Environment.ExpandEnvironmentVariables(@"%USERPROFILE%\Documents\SkidRow"),
+                Environment.ExpandEnvironmentVariables(@"%APPDATA%\SmartSteamEmu"),
+                Environment.ExpandEnvironmentVariables(@"%APPDATA%\CreamAPI"),
+                Environment.ExpandEnvironmentVariables(@"%APPDATA%\GSE Saves")
+            };
+            this.appSettings.WatchedFolders = new List<string>();
+            this.appSettings.WatchedFolders.AddRange(defaultFolders);
             var settingsFilePath = Path.Combine(appDataFolder, "settings.json");
             var settingsJson = JsonConvert.SerializeObject(this.appSettings, Formatting.Indented);
             File.WriteAllText(settingsFilePath, settingsJson);

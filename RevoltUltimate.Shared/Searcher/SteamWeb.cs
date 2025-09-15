@@ -9,55 +9,51 @@ namespace RevoltUltimate.API.Searcher
 {
     public class SteamGameInfo
     {
-        [JsonProperty("appid")]
-        public int AppId { get; set; }
+        [JsonProperty("appid")] public int AppId { get; set; }
 
-        [JsonProperty("name")]
-        public string Name { get; set; }
+        [JsonProperty("name")] public string Name { get; set; }
 
-        [JsonProperty("img_icon_url")]
-        public string ImgIconUrl { get; set; }
+        [JsonProperty("img_icon_url")] public string ImgIconUrl { get; set; }
     }
 
     public class SteamApiResponse
     {
-        [JsonProperty("response")]
-        public SteamResponseData Response { get; set; }
+        [JsonProperty("response")] public SteamResponseData Response { get; set; }
     }
 
     public class SteamResponseData
     {
-        [JsonProperty("game_count")]
-        public int GameCount { get; set; }
+        [JsonProperty("game_count")] public int GameCount { get; set; }
 
-        [JsonProperty("games")]
-        public List<SteamGameInfo> Games { get; set; }
+        [JsonProperty("games")] public List<SteamGameInfo> Games { get; set; }
     }
 
     public class SteamWeb
     {
         private static SteamWeb _instance;
+
         public static SteamWeb Instance
         {
             get
             {
                 if (_instance == null)
                 {
-                    throw new InvalidOperationException($"{nameof(SteamWeb)} has not been initialized. Call {nameof(InitializeSharedInstance)} first.");
+                    throw new InvalidOperationException(
+                        $"{nameof(SteamWeb)} has not been initialized. Call {nameof(InitializeSharedInstance)} first.");
                 }
+
                 return _instance;
             }
         }
 
         private string _apiKey;
         private string _steamIdString;
-
         private SteamWebInterfaceFactory _webInterfaceFactory;
         private PlayerService _playerService;
         private SteamUserStats _steamUserStats;
         private ulong _steamId64;
 
-        private bool _isReady = false;
+        public static bool _isReady = false;
         private static readonly HttpClient _httpClient = new HttpClient();
 
         private SteamWeb(string apiKey, string steamIdString)
@@ -66,6 +62,7 @@ namespace RevoltUltimate.API.Searcher
             this._steamIdString = steamIdString;
             InitializeInternal();
         }
+
         public async Task<List<Achievement>> GetAchievementsForGame(string gameName)
         {
             if (!IsSteamApiReady)
@@ -74,13 +71,15 @@ namespace RevoltUltimate.API.Searcher
                 return new List<Achievement>();
             }
 
-            var url = $"https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={_apiKey}&steamid={_steamId64}&format=json&include_appinfo=true&include_played_free_games=true&skip_unvetted_apps=false";
+            var url =
+                $"https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={_apiKey}&steamid={_steamId64}&format=json&include_appinfo=true&include_played_free_games=true&skip_unvetted_apps=false";
             try
             {
                 var response = await _httpClient.GetStringAsync(url);
                 var apiResponse = JsonConvert.DeserializeObject<SteamApiResponse>(response);
 
-                var steamGame = apiResponse?.Response?.Games?.FirstOrDefault(g => g.Name.Equals(gameName, StringComparison.OrdinalIgnoreCase));
+                var steamGame = apiResponse?.Response?.Games?.FirstOrDefault(g =>
+                    g.Name.Equals(gameName, StringComparison.OrdinalIgnoreCase));
 
                 if (steamGame != null)
                 {
@@ -101,10 +100,12 @@ namespace RevoltUltimate.API.Searcher
             {
                 Console.WriteLine($"{nameof(InitializeSharedInstance)}: API key cannot be null or empty.");
             }
+
             if (string.IsNullOrWhiteSpace(steamId))
             {
                 Console.WriteLine($"{nameof(InitializeSharedInstance)}: Steam ID cannot be null or empty.");
             }
+
             _instance = new SteamWeb(apiKey, steamId);
         }
 
@@ -133,6 +134,7 @@ namespace RevoltUltimate.API.Searcher
                         Console.WriteLine($"Invalid Steam ID format: {_steamIdString}");
                         return;
                     }
+
                     _isReady = true;
                 }
                 catch (Exception e)
@@ -162,7 +164,8 @@ namespace RevoltUltimate.API.Searcher
             }
 
             var games = new List<Game>();
-            var url = $"https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={_apiKey}&steamid={_steamId64}&format=json&include_appinfo=true&include_played_free_games=true&&skip_unvetted_apps=false";
+            var url =
+                $"https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={_apiKey}&steamid={_steamId64}&format=json&include_appinfo=true&include_played_free_games=true&&skip_unvetted_apps=false";
 
             try
             {
@@ -176,14 +179,18 @@ namespace RevoltUltimate.API.Searcher
                         string imageUrl = "";
                         if (!string.IsNullOrEmpty(steamGameInfo.ImgIconUrl) && steamGameInfo.AppId > 0)
                         {
-                            imageUrl = $"http://media.steampowered.com/steamcommunity/public/images/apps/{steamGameInfo.AppId}/{steamGameInfo.ImgIconUrl}.jpg";
+                            imageUrl =
+                                $"http://media.steampowered.com/steamcommunity/public/images/apps/{steamGameInfo.AppId}/{steamGameInfo.ImgIconUrl}.jpg";
                         }
-                        var game = new Game(steamGameInfo.Name, "Steam", imageUrl, "", "Steam Web API", (int)steamGameInfo.AppId);
+
+                        var game = new Game(steamGameInfo.Name, "Steam", imageUrl, "", "Steam Web API",
+                            (int)steamGameInfo.AppId);
                         var achievements = await GetAchievementsForGameAsync(steamGameInfo.AppId);
                         if (achievements != null)
                         {
                             game.AddAchievements(achievements);
                         }
+
                         games.Add(game);
                     }
                 }
@@ -192,6 +199,7 @@ namespace RevoltUltimate.API.Searcher
             {
                 Console.WriteLine($"Error updating games using Steam Web API: {e.Message}");
             }
+
             return games;
         }
 
@@ -212,7 +220,8 @@ namespace RevoltUltimate.API.Searcher
                 }
 
                 var playerAchievementsResponse = await _steamUserStats.GetPlayerAchievementsAsync(uAppId, _steamId64);
-                var globalPercentagesResponse = await _steamUserStats.GetGlobalAchievementPercentagesForAppAsync(uAppId);
+                var globalPercentagesResponse =
+                    await _steamUserStats.GetGlobalAchievementPercentagesForAppAsync(uAppId);
                 var globalPercentages = globalPercentagesResponse?.Data?.ToDictionary(p => p.Name, p => p.Percent);
 
                 if (playerAchievementsResponse?.Data?.Achievements != null)
@@ -242,7 +251,8 @@ namespace RevoltUltimate.API.Searcher
                         }
 
                         float globalPercentage = 0;
-                        if (globalPercentages != null && globalPercentages.TryGetValue(schemaAch.Name, out double percentage))
+                        if (globalPercentages != null &&
+                            globalPercentages.TryGetValue(schemaAch.Name, out double percentage))
                         {
                             globalPercentage = (float)percentage;
                         }
@@ -268,9 +278,57 @@ namespace RevoltUltimate.API.Searcher
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Error fetching achievements for game (AppID: {appId}) using SteamWebAPI2: {e.Message}");
+                Console.WriteLine(
+                    $"Error fetching achievements for game (AppID: {appId}) using SteamWebAPI2: {e.Message}");
             }
+
             return achievements;
+        }
+
+        internal async Task<Game?> GetGameDetailsAsync(int appId)
+        {
+            if (!_isReady)
+            {
+                Console.WriteLine("Steam Web API not ready.");
+                return null;
+            }
+
+            var url =
+                $"https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={_apiKey}&steamid={_steamId64}&format=json&include_appinfo=true&include_played_free_games=true&skip_unvetted_apps=false";
+
+            try
+            {
+                var response = await _httpClient.GetStringAsync(url);
+                var apiResponse = JsonConvert.DeserializeObject<SteamApiResponse>(response);
+
+                var steamGameInfo = apiResponse?.Response?.Games?.FirstOrDefault(g => g.AppId == appId);
+
+                if (steamGameInfo != null)
+                {
+                    string imageUrl = "";
+                    if (!string.IsNullOrEmpty(steamGameInfo.ImgIconUrl) && steamGameInfo.AppId > 0)
+                    {
+                        imageUrl =
+                            $"http://media.steampowered.com/steamcommunity/public/images/apps/{steamGameInfo.AppId}/{steamGameInfo.ImgIconUrl}.jpg";
+                    }
+
+                    var game = new Game(steamGameInfo.Name, "Steam", imageUrl, "", "Steam Web API",
+                        steamGameInfo.AppId);
+                    var achievements = await GetAchievementsForGameAsync(steamGameInfo.AppId);
+                    if (achievements != null)
+                    {
+                        game.AddAchievements(achievements);
+                    }
+
+                    return game;
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error getting game details for AppID {appId} using Steam Web API: {e.Message}");
+            }
+
+            return null;
         }
     }
 }

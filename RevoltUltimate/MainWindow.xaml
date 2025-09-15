@@ -62,74 +62,6 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-
-        <Style x:Key="SharedContextMenuStyle" TargetType="ContextMenu">
-            <Setter Property="OverridesDefaultStyle" Value="True"/>
-            <Setter Property="SnapsToDevicePixels" Value="True"/>
-            <Setter Property="Background" Value="Black"/>
-            <Setter Property="BorderBrush" Value="White"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type ContextMenu}">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
-                            <ItemsPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="SharedMenuItemStyle" TargetType="{x:Type MenuItem}">
-            <Setter Property="OverridesDefaultStyle" Value="True"/>
-            <Setter Property="Background" Value="Black"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="Padding" Value="6,3,6,3"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type MenuItem}">
-                        <Border x:Name="Border"
-                                Background="{TemplateBinding Background}"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter x:Name="HeaderHost"
-                                              ContentSource="Header"
-                                              RecognizesAccessKey="True"
-                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="LightGray" />
-                                <Setter Property="Foreground" Value="Black"/>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Foreground" Value="DarkGray"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="SharedSeparatorStyle" TargetType="{x:Type Separator}">
-            <Setter Property="OverridesDefaultStyle" Value="True"/>
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="Height" Value="1"/>
-            <Setter Property="Margin" Value="0,4"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Separator">
-                        <Rectangle Fill="{TemplateBinding Background}"
-                                   Height="{TemplateBinding Height}"
-                                   Margin="{TemplateBinding Margin}"/>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
     </Window.Resources>
     <DockPanel>
         <Border Background="Black" Height="40" DockPanel.Dock="Top" MouseDown="TitleBar_MouseDown">
@@ -239,6 +171,7 @@
                                 <MenuItem Header="Settings" Click="Menu_Settings_Click"/>
                                 <MenuItem Header="About" Click="Menu_About_Click"/>
                                 <Separator/>
+                                <MenuItem x:Name="ConsoleMenuItem" Header="Console" Click="Console_Click"/>
                                 <MenuItem Header="Exit" Click="Close_Click"/>
                             </ContextMenu>
                         </Button.ContextMenu>
