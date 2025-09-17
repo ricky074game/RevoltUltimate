@@ -2,6 +2,7 @@
 using RevoltUltimate.API.Fetcher;
 using RevoltUltimate.API.Objects;
 using RevoltUltimate.Desktop.Setup;
+using System.ComponentModel;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
@@ -29,21 +30,33 @@ namespace RevoltUltimate.Desktop.Pages
         {
             InitializeComponent();
             _game = game;
+            DataContext = _game; // Set DataContext to the game object
             _gameBannerFetcher = new GameBanner(_game.name);
-            DataContext = this; // Set DataContext for binding
             InitializeGameDataAsync();
             InitializeSparkleAnimation();
+            _game.PropertyChanged += OnGamePropertyChanged;
+        }
+
+        private void OnGamePropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(Game.AchievementSummary))
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    int unlockedAchievements = _game.achievements?.Count(a => a.unlocked) ?? 0;
+                    int totalAchievements = _game.achievements?.Count ?? 0;
+                    UpdateAchievementBorder(unlockedAchievements, totalAchievements);
+                });
+            }
         }
 
         private async void InitializeGameDataAsync()
         {
-            SetGameTitle(_game.name);
             string? imageUrl = await _gameBannerFetcher.GetBannerImagePathAsync(_game.name);
             SetGameImage(imageUrl);
 
             int unlockedAchievements = _game.achievements?.Count(a => a.unlocked) ?? 0;
             int totalAchievements = _game.achievements?.Count ?? 0;
-            SetAchievementInfo(unlockedAchievements, totalAchievements);
             UpdateAchievementBorder(unlockedAchievements, totalAchievements);
         }
 
@@ -70,31 +83,6 @@ namespace RevoltUltimate.Desktop.Pages
             {
                 GameImage.Source = null;
             }
-        }
-
-        public void SetGameTitle(string title)
-        {
-            GameTitleText.Text = title;
-        }
-
-        public void SetAchievementInfo(int unlocked, int total)
-        {
-            string percentText = total > 0 ? $"{(unlocked * 100 / total)}%" : "0%";
-            AchievementInfoText.Text = $"Achievements: {unlocked}/{total}, {percentText}";
-        }
-        private void OnGameAchievementsLoaded(object? sender, EventArgs e)
-        {
-            Dispatcher.Invoke(UpdateAchievementDisplay);
-        }
-
-        private void UpdateAchievementDisplay()
-        {
-            if (_game == null) return;
-
-            int unlockedAchievements = _game.achievements?.Count(a => a.unlocked) ?? 0;
-            int totalAchievements = _game.achievements?.Count ?? 0;
-            SetAchievementInfo(unlockedAchievements, totalAchievements);
-            UpdateAchievementBorder(unlockedAchievements, totalAchievements);
         }
 
         private void UpdateAchievementBorder(int unlocked, int total)
@@ -244,6 +232,10 @@ namespace RevoltUltimate.Desktop.Pages
         private void GameShow_Unloaded(object sender, RoutedEventArgs e)
         {
             _sparkleStoryboard?.Stop(this);
+            if (_game != null)
+            {
+                _game.PropertyChanged -= OnGamePropertyChanged;
+            }
         }
 
         private void GameShow_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -281,8 +273,6 @@ namespace RevoltUltimate.Desktop.Pages
             if (dialog.ShowDialog() == true && dialog.Responses.TryGetValue("New Title", out var newTitle))
             {
                 _game.name = newTitle;
-                SetGameTitle(_game.name);
-                // Consider saving the game state here
             }
         }
 
@@ -305,9 +295,71 @@ namespace RevoltUltimate.Desktop.Pages
 
         private void GenerateJson_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("This feature is not yet implemented.", "Coming Soon", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
+            if (_game.achievements == null || !_game.achievements.Any())
+            {
+                MessageBox.Show("No achievements to generate JSON for.", "No Data", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
+            var saveFileDialog = new SaveFileDialog
+            {
+                Filter = "JSON Files|*.json",
+                Title = "Save achievements.json",
+                FileName = "achievements.json"
+            };
+
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    string jsonFilePath = saveFileDialog.FileName;
+                    string? baseDirectory = Path.GetDirectoryName(jsonFilePath);
+                    if (baseDirectory == null)
+                    {
+                        MessageBox.Show("Invalid save location.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
+                    string iconsDirectoryName = Path.GetFileNameWithoutExtension(jsonFilePath) + "_icons";
+                    string iconsDirectoryPath = Path.Combine(baseDirectory, iconsDirectoryName);
+                    Directory.CreateDirectory(iconsDirectoryPath);
+
+                    var steamAchievements = new List<object>();
+
+                    foreach (var achievement in _game.achievements)
+                    {
+                        string newIconPath = string.Empty;
+                        if (!string.IsNullOrEmpty(achievement.imageUrl) && File.Exists(achievement.imageUrl))
+                        {
+                            string iconFileName = Path.GetFileName(achievement.imageUrl);
+                            string destinationPath = Path.Combine(iconsDirectoryPath, iconFileName);
+                            File.Copy(achievement.imageUrl, destinationPath, true);
+                            newIconPath = Path.Combine(iconsDirectoryName, iconFileName).Replace('\\', '/');
+                        }
+
+                        steamAchievements.Add(new
+                        {
+                            name = achievement.apiName,
+                            displayName = achievement.name,
+                            description = achievement.description,
+                            icon = newIconPath,
+                            icongray = newIconPath, // Using the same icon for gray version
+                            hidden = achievement.hidden ? 1 : 0
+                        });
+                    }
+
+                    var options = new JsonSerializerOptions { WriteIndented = true };
+                    string jsonContent = JsonSerializer.Serialize(steamAchievements, options);
+                    File.WriteAllText(jsonFilePath, jsonContent);
+
+                    MessageBox.Show($"Successfully generated JSON and {steamAchievements.Count} achievement images.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to generate JSON file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
         private void SelectJson_Click(object sender, RoutedEventArgs e)
         {
             var openFileDialog = new OpenFileDialog
@@ -341,8 +393,11 @@ namespace RevoltUltimate.Desktop.Pages
                             getglobalpercentage: 0.0f
                         )).ToList();
 
-                        _game.achievements = achievements;
-                        UpdateAchievementDisplay();
+                        _game.achievements.Clear();
+                        foreach (var achievement in achievements)
+                        {
+                            _game.achievements.Add(achievement);
+                        }
                         MessageBox.Show("Achievements updated successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                 }
@@ -355,7 +410,22 @@ namespace RevoltUltimate.Desktop.Pages
 
         private void SelectTrackFile_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("This feature is not yet implemented.", "Coming Soon", MessageBoxButton.OK, MessageBoxImage.Information);
+            var openFileDialog = new OpenFileDialog
+            {
+                Filter = "Achievement Files|*.json;*.ini;*.txt|All Files|*.*",
+                Title = "Select a file to track for achievements"
+            };
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                _game.trackedFilePath = openFileDialog.FileName;
+                MessageBox.Show($"File '{Path.GetFileName(_game.trackedFilePath)}' is now being tracked for this game.", "Tracking Started", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                if (Application.Current is App app)
+                {
+                    app.WatchSingleFile(_game, _game.trackedFilePath);
+                }
+            }
         }
     }
 }

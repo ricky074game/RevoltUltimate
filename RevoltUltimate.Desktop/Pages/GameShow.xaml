@@ -27,13 +27,13 @@
                                FontWeight="Bold"
                                TextWrapping="Wrap"
                                Foreground="White"
-                               Text="Game Title"
+                               Text="{Binding name}"
                                TextAlignment="Center"
                                Margin="0,0,0,4"/>
                     <TextBlock x:Name="AchievementInfoText"
                                FontSize="12"
                                Foreground="#CCC"
-                               Text="Achievements: 0/0, 0%"
+                               Text="{Binding AchievementSummary}"
                                TextAlignment="Center"
                                TextWrapping="Wrap"/>
                 </StackPanel>

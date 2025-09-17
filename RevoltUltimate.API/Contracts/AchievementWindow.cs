@@ -1,4 +1,5 @@
 ﻿using RevoltUltimate.API.Objects;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 
@@ -14,7 +15,7 @@ namespace RevoltUltimate.API.Contracts
 
             if (string.IsNullOrEmpty(customNotifierDllPath))
             {
-                Console.WriteLine("Custom achievement notifier DLL path is not configured in settings.");
+                Trace.WriteLine("Custom achievement notifier DLL path is not configured in settings.");
                 return;
             }
 
@@ -55,7 +56,7 @@ namespace RevoltUltimate.API.Contracts
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error showing achievement notification via DLL: {ex}");
+                Trace.WriteLine($"Error showing achievement notification via DLL: {ex}");
                 _cachedNotifier = null;
                 _lastLoadedDllPath = null;
             }

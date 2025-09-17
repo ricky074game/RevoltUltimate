@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Security.Cryptography;
@@ -53,7 +54,7 @@ namespace RevoltUltimate.API.Fetcher
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error reading URL cache for {gameName}: {ex.Message}");
+                    Trace.WriteLine($"Error reading URL cache for {gameName}: {ex.Message}");
                 }
             }
             return null;
@@ -75,7 +76,7 @@ namespace RevoltUltimate.API.Fetcher
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error writing URL cache for {gameName}: {ex.Message}");
+                Trace.WriteLine($"Error writing URL cache for {gameName}: {ex.Message}");
             }
         }
 
@@ -95,7 +96,7 @@ namespace RevoltUltimate.API.Fetcher
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to download or save image {bannerUrl}: {ex.Message}");
+                Trace.WriteLine($"Failed to download or save image {bannerUrl}: {ex.Message}");
             }
         }
 
@@ -108,7 +109,7 @@ namespace RevoltUltimate.API.Fetcher
 
             if (bannerUrl == null)
             {
-                Console.WriteLine($"Cache miss for {gameName} URL. Fetching from API.");
+                Trace.WriteLine($"Cache miss for {gameName} URL. Fetching from API.");
                 try
                 {
                     var request = new HttpRequestMessage(
@@ -149,7 +150,7 @@ namespace RevoltUltimate.API.Fetcher
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error fetching game banner from SteamGridDB for {gameName}: {ex.Message}");
+                    Trace.WriteLine($"Error fetching game banner from SteamGridDB for {gameName}: {ex.Message}");
                     return null;
                 }
             }

@@ -19,8 +19,6 @@ namespace RevoltUltimate.Desktop
         public static User? CurrentUser { get; set; }
         private static string SettingsFilePath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RevoltUltimate", "settings.json");
         public static bool IsDebugMode { get; private set; }
-        public static GameWatcherService GameWatcher { get; private set; }
-
         private static string UserFilePath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RevoltUltimate", "user.json");
         private const string SetupCompleteEventName = "RevoltUltimateSetupCompleteEvent";
         public static ApplicationSettings? Settings { get; private set; }
@@ -73,7 +71,7 @@ namespace RevoltUltimate.Desktop
 
                 MainWindow mainWindow = new MainWindow();
                 MainWindow = mainWindow;
-                mainWindow.Loaded += MainWindow_Loaded; // Subscribe to the Loaded event
+                mainWindow.Loaded += MainWindow_Loaded;
                 mainWindow.Show();
                 bootScreen.Close();
             }
@@ -94,13 +92,34 @@ namespace RevoltUltimate.Desktop
             {
                 _gameWatcherService.StartWatching(Settings.WatchedFolders);
             }
+
+            // Re-watch manually tracked files from the previous session
+            if (CurrentUser?.Games != null)
+            {
+                foreach (var game in CurrentUser.Games)
+                {
+                    if (!string.IsNullOrEmpty(game.trackedFilePath))
+                    {
+                        WatchSingleFile(game, game.trackedFilePath);
+                    }
+                }
+            }
         }
 
         private async Task CheckForUpdates(BootScreen bootScreen)
         {
             var downloader = new GitDownloader();
             var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "RevoltAchievement");
-            await Task.Run(() => downloader.PullLatestChanges(localPath));
+            if (Path.Exists(localPath))
+            {
+                await Task.Run(() => downloader.PullLatestChanges(localPath));
+            }
+            else
+            {
+                await Task.Run(() =>
+                    downloader.CloneRepositoryAsync("https://github.com/ricky074game/RevoltAchievement", localPath,
+                        new Progress<string>(), new Progress<int>()));
+            }
         }
         private void SetupSessionRefreshTimer()
         {
@@ -206,7 +225,10 @@ namespace RevoltUltimate.Desktop
         }
         public static TextBoxTraceListener GlobalTraceListener => _globalTraceListener;
 
-
+        public void WatchSingleFile(Game game, string filePath)
+        {
+            _gameWatcherService?.StartWatchingSingleFile(game, filePath);
+        }
         private async Task RunSetup(BootScreen bootScreen)
         {
             this.ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -336,7 +358,8 @@ namespace RevoltUltimate.Desktop
                     {
                         if (!existingAchievements.TryGetValue(newAchievement.apiName, out var existingAchievement) || !existingAchievement.unlocked)
                         {
-                            AchievementWindow.ShowNotification(newAchievement, App.Settings.CustomAnimationDllPath);
+                            Trace.WriteLine("ACHIEVEMENT FOUND");
+                            AchievementWindow.ShowNotification(newAchievement, Settings.CustomAnimationDllPath);
                             changed = true;
                         }
                     }

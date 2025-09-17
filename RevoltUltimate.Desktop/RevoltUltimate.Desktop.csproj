@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RevoltUltimate.Shared\RevoltUltimate.API.csproj" />
+    <ProjectReference Include="..\RevoltUltimate.API\RevoltUltimate.API.csproj" />
   </ItemGroup>
 
   <ItemGroup>

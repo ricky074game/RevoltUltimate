@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using System.Collections.ObjectModel;
+using Microsoft.Win32;
 using Newtonsoft.Json;
 using RevoltUltimate.API.Objects;
 using System.IO;
@@ -68,7 +69,7 @@ namespace RevoltUltimate.Desktop.Setup
 
         private void Minimize_Click(object sender, MouseButtonEventArgs e)
         {
-            this.WindowState = WindowState.Minimized;
+            WindowState = WindowState.Minimized;
         }
 
         private void Close_Click(object sender, MouseButtonEventArgs e)
@@ -191,7 +192,7 @@ namespace RevoltUltimate.Desktop.Setup
             {
                 UserName = Step3.Username,
                 Xp = 0,
-                Games = new List<Game>()
+                Games = new ObservableCollection<Game>()
             };
 
             var appDataFolder = Path.Combine(

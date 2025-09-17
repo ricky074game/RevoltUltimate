@@ -1,12 +1,13 @@
 ﻿using HtmlAgilityPack;
 using RevoltUltimate.API.Objects;
+using System.Collections.ObjectModel;
 using System.Net.Http;
 
 namespace RevoltUltimate.API.Fetcher
 {
     public class SteamStoreScraper
     {
-        private readonly HttpClient _httpClient = new HttpClient();
+        private readonly HttpClient _httpClient = new();
 
         public async Task<Game> ScrapeGameDataAsync(int appId)
         {
@@ -22,7 +23,7 @@ namespace RevoltUltimate.API.Fetcher
 
                 var achievements = await ScrapeAchievementsAsync(appId);
 
-                return new Game(gameName, "PC", null, gameDescription, "Emulator", achievements, appId);
+                return new Game(gameName, "PC", null, gameDescription, "Emulator", appId, achievements, null);
             }
             catch (Exception ex)
             {
@@ -31,9 +32,9 @@ namespace RevoltUltimate.API.Fetcher
             }
         }
 
-        private async Task<List<Achievement>> ScrapeAchievementsAsync(int appId)
+        private async Task<ObservableCollection<Achievement>> ScrapeAchievementsAsync(int appId)
         {
-            var achievements = new List<Achievement>();
+            var achievements = new ObservableCollection<Achievement>();
             try
             {
                 int count = 0;

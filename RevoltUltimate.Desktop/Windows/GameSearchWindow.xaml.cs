@@ -80,10 +80,8 @@ namespace RevoltUltimate.Desktop.Windows
         }
         private void HandleGameSelection(object selectedItem)
         {
-            // Ensure the code runs on the UI thread
             this.Dispatcher.Invoke(() =>
             {
-                // Use the WPF-native folder picker
                 var folderDialog = new CommonOpenFileDialog
                 {
                     IsFolderPicker = true,
@@ -96,7 +94,6 @@ namespace RevoltUltimate.Desktop.Windows
 
                     try
                     {
-                        // Find a JSON file called achievements.json in the folder and subfolders
                         var jsonFiles = Directory.GetFiles(selectedPath, "achievements.json", SearchOption.AllDirectories);
                         if (jsonFiles.Length == 0)
                         {
@@ -104,7 +101,6 @@ namespace RevoltUltimate.Desktop.Windows
                             return;
                         }
 
-                        // Read and deserialize the JSON file
                         var jsonContent = File.ReadAllText(jsonFiles[0]);
                         var steamAchievements = JsonSerializer.Deserialize<List<SteamAchievement>>(jsonContent);
 
@@ -114,14 +110,7 @@ namespace RevoltUltimate.Desktop.Windows
                             return;
                         }
 
-                        // Create a new Game object
-                        var game = new Game
-                        (
-                            selectedItem is SearchResult searchResult ? searchResult.Name : "Unknown Game",
-                            "PC",
-                            "",
-                            "",
-                            "Steam Emulator",
+                        var achievementCollection = new System.Collections.ObjectModel.ObservableCollection<Achievement>(
                             steamAchievements.Select(sa => new Achievement(
                                 Name: sa.DisplayName,
                                 Description: sa.Description,
@@ -130,14 +119,26 @@ namespace RevoltUltimate.Desktop.Windows
                                 Id: 0,
                                 Unlocked: false,
                                 DateTimeUnlocked: null,
-                                Difficulty: 0, // Difficulty is not available in the JSON
+                                Difficulty: 0,
                                 apiName: sa.Name,
                                 progress: false,
                                 currentProgress: 0,
                                 maxProgress: 0,
                                 getglobalpercentage: 0.0f
-                            )).ToList(),
-                            0);
+                            ))
+                        );
+
+                        var game = new Game
+                        (
+                            selectedItem is SearchResult searchResult ? searchResult.Name : "Unknown Game",
+                            "PC",
+                            "",
+                            "",
+                            "Steam Emulator",
+                            0,
+                            achievementCollection,
+                            ""
+                        );
 
                         var mainWindow = (MainWindow)Application.Current.MainWindow;
                         mainWindow.AddGame(game);

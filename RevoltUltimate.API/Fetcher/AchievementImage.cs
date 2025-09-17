@@ -34,10 +34,6 @@ namespace RevoltUltimate.API.Fetcher
             else
             {
                 cacheFilePath = GetCachedImagePath(imageUrl);
-                if (cacheFilePath == null)
-                {
-                    return null;
-                }
 
                 if (!File.Exists(cacheFilePath))
                 {
@@ -51,10 +47,6 @@ namespace RevoltUltimate.API.Fetcher
         private string GetCachedImagePath(string imageUrl)
         {
             string fileName = Path.GetFileName(imageUrl);
-            if (imageUrl == null)
-            {
-                return null;
-            }
             return Path.Combine(_cacheDirectory, fileName);
         }
 

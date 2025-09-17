@@ -8,10 +8,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Remove="Fetcher\IGDBApiKey.txt" />
-		<None Remove="Fetcher\IGDBKeys.txt" />
 		<None Remove="Fetcher\SteamGridDbApiKey.txt" />
-		<None Remove="Searcher\steamapi.txt" />
 	</ItemGroup>
 
 	<ItemGroup>

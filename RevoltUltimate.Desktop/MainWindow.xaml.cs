@@ -7,6 +7,7 @@ using RevoltUltimate.API.Searcher;
 using RevoltUltimate.API.Update;
 using RevoltUltimate.Desktop.Pages;
 using RevoltUltimate.Desktop.Windows;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Net.Http;
 using System.Windows;
@@ -120,9 +121,9 @@ namespace RevoltUltimate.Desktop
         private void PerformOpenAction()
         {
             this.Show();
-            this.WindowState = WindowState.Normal;
+            WindowState = WindowState.Normal;
             this.Activate();
-            this.ShowInTaskbar = true;
+            ShowInTaskbar = true;
         }
         private void Console_Click(object sender, RoutedEventArgs e)
         {
@@ -318,7 +319,7 @@ namespace RevoltUltimate.Desktop
         private void Minimize_Click(object sender, RoutedEventArgs e)
         {
             this.Hide();
-            this.ShowInTaskbar = false;
+            ShowInTaskbar = false;
         }
 
         private void Close_Click(object sender, RoutedEventArgs e)
@@ -479,7 +480,7 @@ namespace RevoltUltimate.Desktop
                     }
                 }
 
-                AddSelectGamesToGrid(allGames);
+                AddSelectGamesToGrid(CurrentUser.Games);
             }
         }
         public void AddGame(Game game)
@@ -499,7 +500,7 @@ namespace RevoltUltimate.Desktop
             Save();
         }
 
-        private void AddSelectGamesToGrid(List<Game> games)
+        private void AddSelectGamesToGrid(IEnumerable<Game> games)
         {
             if (!games.Any())
             {
@@ -522,8 +523,6 @@ namespace RevoltUltimate.Desktop
             Save();
         }
 
-
-
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
             Save();
@@ -532,7 +531,7 @@ namespace RevoltUltimate.Desktop
             {
                 e.Cancel = true;
                 this.Hide();
-                this.ShowInTaskbar = false;
+                ShowInTaskbar = false;
             }
             else
             {
