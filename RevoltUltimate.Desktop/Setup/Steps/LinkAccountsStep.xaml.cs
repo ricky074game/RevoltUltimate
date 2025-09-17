@@ -1,9 +1,9 @@
+using RevoltUltimate.Desktop.Setup.Steam;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using RevoltUltimate.Desktop.Setup.Steam;
 
 namespace RevoltUltimate.Desktop.Setup.Steps
 {

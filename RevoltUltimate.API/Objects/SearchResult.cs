@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace RevoltUltimate.API.Objects
+﻿namespace RevoltUltimate.API.Objects
 {
     public class SearchResult
     {

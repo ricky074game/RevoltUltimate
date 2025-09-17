@@ -7,7 +7,6 @@ using RevoltUltimate.API.Searcher;
 using RevoltUltimate.API.Update;
 using RevoltUltimate.Desktop.Pages;
 using RevoltUltimate.Desktop.Windows;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Net.Http;
 using System.Windows;

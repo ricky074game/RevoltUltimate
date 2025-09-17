@@ -1,7 +1,7 @@
-﻿using System.Windows;
+﻿using RevoltUltimate.Desktop.Options;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using RevoltUltimate.Desktop.Options;
 
 namespace RevoltUltimate.Desktop.Windows
 {

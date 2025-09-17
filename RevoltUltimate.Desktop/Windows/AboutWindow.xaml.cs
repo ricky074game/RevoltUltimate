@@ -1,8 +1,8 @@
-﻿using System.ComponentModel;
+﻿using RevoltUltimate.API.Update;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
-using RevoltUltimate.API.Update;
 
 namespace RevoltUltimate.Desktop.Windows
 {

@@ -184,7 +184,7 @@ namespace RevoltUltimate.API.Searcher
                         }
 
                         var game = new Game(steamGameInfo.Name, "Steam", imageUrl, "", "Steam Web API",
-                            (int)steamGameInfo.AppId);
+                            steamGameInfo.AppId);
                         var achievements = await GetAchievementsForGameAsync(steamGameInfo.AppId);
                         if (achievements != null)
                         {

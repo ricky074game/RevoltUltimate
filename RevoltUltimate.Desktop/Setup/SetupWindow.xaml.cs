@@ -1,7 +1,7 @@
-﻿using System.Collections.ObjectModel;
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using Newtonsoft.Json;
 using RevoltUltimate.API.Objects;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;

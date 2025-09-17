@@ -1,8 +1,7 @@
 ﻿using RevoltUltimate.API.Accounts;
-using RevoltUltimate.Desktop.Setup;
+using RevoltUltimate.Desktop.Setup.Steam;
 using System.Windows;
 using System.Windows.Controls;
-using RevoltUltimate.Desktop.Setup.Steam;
 
 namespace RevoltUltimate.Desktop.Options
 {
