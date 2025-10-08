@@ -211,7 +211,8 @@ namespace RevoltUltimate.Desktop.Pages
         {
             if (string.IsNullOrEmpty(datetime))
             {
-                throw new ArgumentException("The datetime string cannot be null or empty.", nameof(datetime));
+                // Return a default value
+                return DateTime.MinValue;
             }
 
             string cleanedDatetime = datetime.Replace("Unlocked ", "").Replace(" @ ", " ");

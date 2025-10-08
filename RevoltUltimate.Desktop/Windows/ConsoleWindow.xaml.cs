@@ -10,10 +10,7 @@ namespace RevoltUltimate.Desktop.Windows
         {
             InitializeComponent();
 
-            // Attach the global trace listener to the TextBox
             App.GlobalTraceListener.AttachTextBox(OutputTextBox);
-
-            // Load previous trace history into the TextBox
             App.GlobalTraceListener.LoadPreviousHistory();
 
             Closed += ConsoleWindow_Closed;
@@ -21,7 +18,6 @@ namespace RevoltUltimate.Desktop.Windows
 
         private void ConsoleWindow_Closed(object sender, EventArgs e)
         {
-            // Detach the TextBox when the window is closed
             App.GlobalTraceListener.DetachTextBox();
         }
     }

@@ -172,6 +172,7 @@
                                 <MenuItem Header="About" Click="Menu_About_Click"/>
                                 <Separator/>
                                 <MenuItem x:Name="ConsoleMenuItem" Header="Console" Click="Console_Click"/>
+                                <MenuItem x:Name="ConsoleCometMenuItem" Header="Comet Console" Click="CometConsole_Click"></MenuItem>
                                 <MenuItem Header="Exit" Click="Close_Click"/>
                             </ContextMenu>
                         </Button.ContextMenu>

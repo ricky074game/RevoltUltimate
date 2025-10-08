@@ -1,0 +1,18 @@
+﻿<Window x:Class="RevoltUltimate.Desktop.Windows.CometConsoleWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Comet Console" Height="450" Width="800"
+        Background="#1E1E1E">
+    <Grid>
+        <ScrollViewer x:Name="LogScrollViewer" VerticalScrollBarVisibility="Auto">
+            <TextBox x:Name="LogTextBox" 
+                     IsReadOnly="True" 
+                     Background="Transparent" 
+                     Foreground="White" 
+                     BorderThickness="0"
+                     FontFamily="Consolas"
+                     TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto"/>
+        </ScrollViewer>
+    </Grid>
+</Window>

@@ -217,7 +217,7 @@ namespace RevoltUltimate.API.Contracts
                 catch (Exception ex) { Trace.WriteLine($"Steam API fetch failed for AppID {appId}: {ex.Message}."); }
             }
 
-            var localAchievementPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "RevoltAchievement", "Achievements", $"{appId}.json");
+            var localAchievementPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "RevoltAchievement", "Achievements", "Steam", $"{appId}.json");
             if (File.Exists(localAchievementPath))
             {
                 try

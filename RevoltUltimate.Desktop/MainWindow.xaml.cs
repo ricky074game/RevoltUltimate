@@ -49,6 +49,7 @@ namespace RevoltUltimate.Desktop
                 ProfilePicturePath = "Images/profilePic.png";
             }
             ConsoleMenuItem.Visibility = App.IsDebugMode ? Visibility.Visible : Visibility.Collapsed;
+            ConsoleCometMenuItem.Visibility = App.IsDebugMode ? Visibility.Visible : Visibility.Collapsed;
             DataContext = this;
             NotificationViewModel = new NotificationViewModel();
             NotificationSystem.DataContext = NotificationViewModel;
@@ -135,6 +136,21 @@ namespace RevoltUltimate.Desktop
             else
             {
                 _consoleWindow.Activate();
+            }
+        }
+
+        private void CometConsole_Click(object sender, RoutedEventArgs e)
+        {
+            if (App.CometConsoleWindow != null)
+            {
+                if (App.CometConsoleWindow.IsVisible)
+                {
+                    App.CometConsoleWindow.Activate();
+                }
+                else
+                {
+                    App.CometConsoleWindow.Show();
+                }
             }
         }
         private void PerformCloseAction()

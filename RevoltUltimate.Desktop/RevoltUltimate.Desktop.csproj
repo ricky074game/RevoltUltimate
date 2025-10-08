@@ -1,58 +1,75 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <UseWPF>true</UseWPF>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseWPF>true</UseWPF>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="Icons\steam.png" />
-    <None Remove="Images\bell.png" />
-    <None Remove="Images\circle.gif" />
-    <None Remove="Images\profilepic.png" />
-    <None Remove="Images\RoninLogo.ico" />
-    <None Remove="Images\RoninLogo.png" />
-    <None Remove="Images\unknown.jpg" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Remove="Icons\steam.png" />
+		<None Remove="Images\bell.png" />
+		<None Remove="Images\circle.gif" />
+		<None Remove="Images\profilepic.png" />
+		<None Remove="Images\RoninLogo.ico" />
+		<None Remove="Images\RoninLogo.png" />
+		<None Remove="Images\unknown.jpg" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="2.0.1" />
-    <PackageReference Include="Microsoft-WindowsAPICodePack-Shell" Version="1.1.5" />
-    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3405.78" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="SharpVectors" Version="1.8.4.2" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="2.0.1" />
+		<PackageReference Include="Microsoft-WindowsAPICodePack-Shell" Version="1.1.5" />
+		<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3405.78" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="SharpVectors" Version="1.8.4.2" />
+		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\RevoltUltimate.API\RevoltUltimate.API.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\RevoltUltimate.API\RevoltUltimate.API.csproj" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Resource Include="Icons\steam.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Resource>
-    <Resource Include="Images\bell.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Resource>
-    <Resource Include="Images\circle.gif">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Resource>
-    <Resource Include="Images\profilepic.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Resource>
-    <Resource Include="Images\RoninLogo.ico">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </Resource>
-    <Resource Include="Images\RoninLogo.png">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </Resource>
-    <Resource Include="Images\unknown.jpg">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Resource>
-  </ItemGroup>
+	<ItemGroup>
+		<Resource Include="Icons\steam.png">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Resource>
+		<Resource Include="Images\bell.png">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Resource>
+		<Resource Include="Images\circle.gif">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Resource>
+		<Resource Include="Images\profilepic.png">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Resource>
+		<Resource Include="Images\RoninLogo.ico">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</Resource>
+		<Resource Include="Images\RoninLogo.png">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</Resource>
+		<Resource Include="Images\unknown.jpg">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Resource>
+	</ItemGroup>
+	<!-- Target to build Comet -->
+	<Target Name="BuildComet" BeforeTargets="BeforeBuild">
+		<PropertyGroup>
+			<CometProjectPath>..\..\cometOffline</CometProjectPath>
+		</PropertyGroup>
+		<Exec Command="cargo build --release" WorkingDirectory="$(CometProjectPath)" Condition="Exists('$(CometProjectPath)')" />
+		<ItemGroup>
+			<CometExe Include="$(CometProjectPath)\target\release\comet.exe" />
+			<CometCert Include="$(CometProjectPath)\target\release\cert.pem" />
+			<CometKey Include="$(CometProjectPath)\target\release\key.pem" />
+		</ItemGroup>
+		<Copy SourceFiles="@(CometExe)" DestinationFolder="$(TargetDir)comet" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(CometCert)" DestinationFolder="$(TargetDir)comet" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(CometKey)" DestinationFolder="$(TargetDir)comet" SkipUnchangedFiles="true" />
 
+
+		<Message Text="Comet executable built and copied successfully." Importance="high" />
+	</Target>
 </Project>

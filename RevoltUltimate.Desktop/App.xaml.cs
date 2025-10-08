@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using RevoltUltimate.API.Accounts;
+using RevoltUltimate.API.Comet;
 using RevoltUltimate.API.Contracts;
 using RevoltUltimate.API.Objects;
 using RevoltUltimate.API.Searcher;
@@ -26,7 +27,11 @@ namespace RevoltUltimate.Desktop
         private DispatcherTimer _sessionRefreshTimer;
         private static TextBoxTraceListener _globalTraceListener;
         private GameWatcherService? _gameWatcherService;
-
+        private AchievementProvider? _achievementProvider;
+        private CancellationTokenSource _appCancellationTokenSource = new CancellationTokenSource();
+        private Game? _activeCometGame;
+        public static CometConsoleWindow? CometConsoleWindow { get; private set; }
+        private CometManager? _cometManager;
 
         private async void Application_Startup(object sender, StartupEventArgs e)
         {
@@ -37,6 +42,8 @@ namespace RevoltUltimate.Desktop
             {
                 IsDebugMode = true;
             }
+            Dispatcher.UnhandledException += App_DispatcherUnhandledException;
+            AppDomain.CurrentDomain.UnhandledException += AppDomain_UnhandledException;
             _globalTraceListener = new TextBoxTraceListener();
             Trace.Listeners.Add(_globalTraceListener);
             Trace.WriteLine("Application has begun startup.");
@@ -53,8 +60,20 @@ namespace RevoltUltimate.Desktop
                 {
                     await RunSetup(bootScreen);
                 }
-                bootScreen.UpdateStatus("Loading Settings...");
+
+                bootScreen.UpdateStatus("Starting comet...");
+                InitializeCometManager();
+
+                bootScreen.UpdateStatus("Checking for updates...");
+                await CheckForUpdates(bootScreen);
                 bootScreen.UpdateProgress(10);
+                bootScreen.UpdateStatus("Initializing services...");
+                InitializeServices();
+                bootScreen.UpdateProgress(20);
+                bootScreen.UpdateStatus("Connecting to Comet...");
+                await InitializeCometConnection();
+                bootScreen.UpdateStatus("Loading Settings...");
+                bootScreen.UpdateProgress(30);
                 UpdateSettings();
                 if (Settings == null)
                 {
@@ -66,8 +85,6 @@ namespace RevoltUltimate.Desktop
                 await SetupLinkers(bootScreen);
 
                 bootScreen.UpdateProgress(90);
-                bootScreen.UpdateStatus("Checking for updates...");
-                await CheckForUpdates(bootScreen);
 
                 MainWindow mainWindow = new MainWindow();
                 MainWindow = mainWindow;
@@ -80,6 +97,201 @@ namespace RevoltUltimate.Desktop
                 MessageBox.Show($"An error occurred during startup: {ex.Message}", "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 bootScreen.Close();
                 Current.Shutdown();
+            }
+        }
+
+        private void AppDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            Trace.WriteLine($"An unhandled non-UI exception occurred: {e.ExceptionObject}");
+            _cometManager?.Stop();
+        }
+
+        private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+        {
+            Trace.WriteLine($"An unhandled UI exception occurred: {e.Exception}");
+            _cometManager?.Stop();
+            MessageBox.Show("An unexpected error occurred and the application will now close.", "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+
+        private void InitializeCometManager()
+        {
+            _cometManager = new CometManager();
+            CometConsoleWindow = new CometConsoleWindow();
+
+            _cometManager.CometLogReceived += (log) =>
+            {
+                CometConsoleWindow?.AppendLog(log);
+            };
+
+            _cometManager.CometErrorLogReceived += (errorLog) =>
+            {
+                CometConsoleWindow?.AppendLog(errorLog);
+            };
+
+            _cometManager.Start(CurrentUser?.UserName, IsDebugMode);
+        }
+
+        private void InitializeServices()
+        {
+            _achievementProvider = new AchievementProvider();
+            if (_cometManager != null)
+            {
+                _cometManager.Service.GameConnected += OnCometGameConnected;
+                _cometManager.Service.AchievementUnlocked += OnCometAchievementUnlocked;
+            }
+        }
+        private async void OnCometGameConnected(GameConnectedData gameData)
+        {
+            if (CurrentUser == null || _achievementProvider == null || _cometManager == null) return;
+
+            var existingGame = CurrentUser.Games.FirstOrDefault(g => g.appid == gameData.Id);
+
+            if (existingGame == null)
+            {
+                // Game is new, so we parse the JSON file to get its data.
+                string achievementFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "RevoltAchievement", "Achievements", "GOG", $"{gameData.Id}.json");
+                if (!File.Exists(achievementFilePath))
+                {
+                    Trace.WriteLine($"AchievementProvider: Achievement file not found for new game {gameData.Id}. Cannot add game.");
+                    return;
+                }
+
+                try
+                {
+                    string jsonContent = await File.ReadAllTextAsync(achievementFilePath);
+                    var gameDataFromJson = JsonConvert.DeserializeObject<GameDataFromJson>(jsonContent);
+
+                    if (gameDataFromJson != null)
+                    {
+                        existingGame = new Game(
+                            name: gameDataFromJson.Name,
+                            platform: gameDataFromJson.Platform,
+                            imageUrl: gameDataFromJson.ImageUrl,
+                            description: gameDataFromJson.Description,
+                            method: "CometOffline",
+                            appid: gameData.Id);
+
+                        if (gameDataFromJson.Achievements != null)
+                        {
+                            foreach (var achievementJson in gameDataFromJson.Achievements)
+                            {
+                                var achievement = new Achievement(
+                                    Name: achievementJson.Name,
+                                    Description: achievementJson.Description,
+                                    ImageUrl: achievementJson.ImageUrl,
+                                    Hidden: achievementJson.Hidden == 1,
+                                    Id: achievementJson.Id,
+                                    Unlocked: achievementJson.Unlocked,
+                                    DateTimeUnlocked: null,
+                                    Difficulty: achievementJson.Difficulty,
+                                    apiName: achievementJson.ApiName,
+                                    progress: false,
+                                    currentProgress: 0,
+                                    maxProgress: 0,
+                                    getglobalpercentage: achievementJson.GetGlobalPercentage
+                                );
+                                existingGame.achievements.Add(achievement);
+                            }
+                        }
+
+                        CurrentUser.Games.Add(existingGame);
+                        await Dispatcher.InvokeAsync(() =>
+                        {
+                            if (MainWindow is MainWindow mw)
+                            {
+                                mw.AddGame(existingGame);
+                                mw.Save();
+                            }
+                        });
+                        Trace.WriteLine($"Added new game from Comet: {existingGame.name} ({gameData.Id})");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Trace.WriteLine($"Error loading game data for new game {gameData.Id}: {ex.Message}");
+                    return; // Stop if we can't process the new game's data
+                }
+            }
+            else
+            {
+                Trace.WriteLine($"Found existing game: {existingGame.name} ({gameData.Id}). Using user's data.");
+            }
+
+            _activeCometGame = existingGame;
+            Trace.WriteLine($"Active Comet game set to: {_activeCometGame.name}");
+
+            // Send the achievement list to Comet, using the correct unlock times.
+            if (existingGame.achievements.Any())
+            {
+                var achievementListData = existingGame.achievements.Select(a =>
+                {
+                    long? unlockedAtTimestamp = null;
+                    if (a.unlocked && !string.IsNullOrEmpty(a.datetimeunlocked))
+                    {
+                        if (DateTimeOffset.TryParse(a.datetimeunlocked, out var unlockedDto))
+                        {
+                            unlockedAtTimestamp = unlockedDto.ToUnixTimeSeconds();
+                        }
+                    }
+
+                    return new AchievementListData
+                    {
+                        AchievementId = a.apiName,
+                        Key = a.apiName,
+                        Name = a.name,
+                        Description = a.description,
+                        UnlockedAt = unlockedAtTimestamp,
+                        ImageUrlUnlocked = a.imageUrl,
+                        ImageUrlLocked = a.imageUrl
+                    };
+                }).ToList();
+
+                var message = new AchievementsListMessage
+                {
+                    GameId = gameData.Id,
+                    Data = achievementListData
+                };
+
+                await _cometManager.Service.SendJsonAsync(message);
+            }
+        }
+
+        private void OnCometAchievementUnlocked(AchievementUnlockedData achievementData)
+        {
+            if (_activeCometGame == null)
+            {
+                Trace.WriteLine("Comet: Achievement unlocked event received, but no active game is set.");
+                return;
+            }
+
+            var achievementToUnlock = _activeCometGame.achievements.FirstOrDefault(a => a.apiName == achievementData.ApiName);
+
+            if (achievementToUnlock != null)
+            {
+                if (!achievementToUnlock.unlocked)
+                {
+                    var unlockedDateTime = DateTimeOffset.FromUnixTimeSeconds(achievementData.UnlockedAt).ToString("o");
+                    achievementToUnlock.SetUnlockedStatus(true, unlockedDateTime);
+
+                    Trace.WriteLine($"Comet: Unlocked achievement '{achievementToUnlock.name}' for game '{_activeCometGame.name}'.");
+
+                    Current.Dispatcher.Invoke(() =>
+                    {
+                        AchievementWindow.ShowNotification(achievementToUnlock, Settings.CustomAnimationDllPath);
+                        if (MainWindow is MainWindow mw)
+                        {
+                            mw.Save();
+                        }
+                    });
+                }
+                else
+                {
+                    Trace.WriteLine($"Comet: Received unlock for already unlocked achievement '{achievementToUnlock.name}'.");
+                }
+            }
+            else
+            {
+                Trace.WriteLine($"Comet: Received unlock for unknown achievement with apiName '{achievementData.ApiName}'.");
             }
         }
 
@@ -331,6 +543,14 @@ namespace RevoltUltimate.Desktop
                 Debug.WriteLine("No saved Steam account found.");
             }
         }
+        private async Task InitializeCometConnection()
+        {
+            if (_cometManager != null)
+            {
+                await _cometManager.Service.StartAsync(_appCancellationTokenSource.Token);
+            }
+        }
+
         private void OnGameDataFound(Game foundGame)
         {
             Current.Dispatcher.Invoke(() =>
@@ -410,7 +630,9 @@ namespace RevoltUltimate.Desktop
 
         protected override void OnExit(ExitEventArgs e)
         {
+            _appCancellationTokenSource.Cancel();
             _gameWatcherService?.StopWatching();
+            _cometManager?.Stop();
             base.OnExit(e);
         }
     }

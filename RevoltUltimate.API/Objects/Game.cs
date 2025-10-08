@@ -31,7 +31,7 @@ namespace RevoltUltimate.API.Objects
         }
 
         public string method { get; set; }
-        public int appid { get; set; }
+        public long appid { get; set; }
 
         private ObservableCollection<Achievement> _achievements;
         public ObservableCollection<Achievement> achievements
@@ -80,7 +80,7 @@ namespace RevoltUltimate.API.Objects
             }
         }
 
-        public Game(string name, string platform, string imageUrl, string description, string method, int appid)
+        public Game(string name, string platform, string imageUrl, string description, string method, long appid)
         {
             this._name = name;
             this.platform = platform;
@@ -92,7 +92,7 @@ namespace RevoltUltimate.API.Objects
         }
 
         [JsonConstructor]
-        public Game(string name, string platform, string imageUrl, string description, string method, int appid, ObservableCollection<Achievement> achievements, string? trackedFilePath)
+        public Game(string name, string platform, string imageUrl, string description, string method, long appid, ObservableCollection<Achievement> achievements, string? trackedFilePath)
         {
             this._name = name;
             this.platform = platform;

@@ -71,7 +71,7 @@ namespace RevoltUltimate.API.Searcher
 
 
 
-        public async void SetSessionCookies(string steamLoginSecure, string sessionId, string username)
+        public void SetSessionCookies(string steamLoginSecure, string sessionId, string username)
         {
             if (string.IsNullOrEmpty(steamLoginSecure) || string.IsNullOrEmpty(sessionId))
             {

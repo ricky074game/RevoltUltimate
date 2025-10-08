@@ -34,7 +34,7 @@ namespace RevoltUltimate.API.Accounts
             SaveAccountsToFile(accounts);
         }
 
-        public static Tuple<string, string> GetSteamSession(string username)
+        public static Tuple<string, string>? GetSteamSession(string username)
         {
             var account = GetSavedAccounts().FirstOrDefault(a => a.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
             if (account == null || string.IsNullOrEmpty(account.EncryptedSessionId) || string.IsNullOrEmpty(account.EncryptedSteamLoginSecure))
@@ -107,10 +107,10 @@ namespace RevoltUltimate.API.Accounts
         private static void SaveAccountsToFile(List<SavedAccount> accounts)
         {
             string json = JsonConvert.SerializeObject(accounts, Formatting.Indented);
-            string directoryPath = Path.GetDirectoryName(FilePath);
+            string? directoryPath = Path.GetDirectoryName(FilePath);
             if (!Directory.Exists(directoryPath))
             {
-                Directory.CreateDirectory(directoryPath);
+                if (directoryPath != null) Directory.CreateDirectory(directoryPath);
             }
             File.WriteAllText(FilePath, json);
         }
@@ -145,7 +145,7 @@ namespace RevoltUltimate.API.Accounts
             return Convert.ToBase64String(encryptedBytes);
         }
 
-        private static string Decrypt(string encryptedData)
+        private static string? Decrypt(string encryptedData)
         {
             if (string.IsNullOrEmpty(encryptedData)) return null;
             try
@@ -156,7 +156,6 @@ namespace RevoltUltimate.API.Accounts
             }
             catch
             {
-                // Return null if decryption fails
                 return null;
             }
         }
