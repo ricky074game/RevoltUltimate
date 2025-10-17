@@ -1,0 +1,3 @@
+[submodule "cometOffline"]
+	path = cometOffline
+	url = https://github.com/ricky074game/cometOffline.git
