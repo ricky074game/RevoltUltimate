@@ -27,7 +27,6 @@ namespace RevoltUltimate.API.Accounts
                     Username = username,
                     EncryptedSessionId = Encrypt(sessionId),
                     EncryptedSteamLoginSecure = Encrypt(steamLoginSecure),
-                    EncryptedPassword = null // Explicitly null for session-only login
                 });
             }
 
@@ -61,45 +60,7 @@ namespace RevoltUltimate.API.Accounts
             {
                 account.EncryptedSessionId = null;
                 account.EncryptedSteamLoginSecure = null;
-                // If the account only had session data and no password, we can remove it.
-                if (string.IsNullOrEmpty(account.EncryptedPassword))
-                {
-                    accounts.Remove(account);
-                }
-                SaveAccountsToFile(accounts);
-            }
-        }
-
-        public static void SaveAccount(string username, string password, string guardData = null)
-        {
-            var accounts = GetSavedAccounts();
-            var existingAccount = accounts.FirstOrDefault(a => a.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
-
-            if (existingAccount != null)
-            {
-                existingAccount.EncryptedPassword = Encrypt(password);
-                existingAccount.GuardData = guardData;
-            }
-            else
-            {
-                accounts.Add(new SavedAccount
-                {
-                    Username = username,
-                    EncryptedPassword = Encrypt(password),
-                    GuardData = guardData
-                });
-            }
-
-            SaveAccountsToFile(accounts);
-        }
-
-        public static void UpdateGuardData(string username, string guardData)
-        {
-            var accounts = GetSavedAccounts();
-            var account = accounts.FirstOrDefault(a => a.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
-            if (account != null)
-            {
-                account.GuardData = guardData;
+                accounts.Remove(account);
                 SaveAccountsToFile(accounts);
             }
         }
@@ -123,18 +84,6 @@ namespace RevoltUltimate.API.Accounts
             }
             string json = File.ReadAllText(FilePath);
             return JsonConvert.DeserializeObject<List<SavedAccount>>(json) ?? new List<SavedAccount>();
-        }
-
-        public static string? GetDecryptedPassword(string username)
-        {
-            var account = GetSavedAccounts().FirstOrDefault(a => a.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
-            return account != null ? Decrypt(account.EncryptedPassword) : null;
-        }
-
-        public static string? GetGuardData(string username)
-        {
-            var account = GetSavedAccounts().FirstOrDefault(a => a.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
-            return account?.GuardData;
         }
 
         private static string Encrypt(string data)
