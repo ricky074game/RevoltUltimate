@@ -2,12 +2,14 @@
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using System.IO;
+using System.Net.Http;
 
 namespace RevoltUltimate.API.Fetcher
 {
     public class AchievementImage
     {
         private readonly string _cacheDirectory;
+        private static readonly HttpClient _httpClient = new HttpClient();
 
         public AchievementImage()
         {
@@ -23,7 +25,7 @@ namespace RevoltUltimate.API.Fetcher
             }
         }
 
-        public Image<Rgba32>? GetProcessedImage(string imageUrl, bool unlocked, bool hidden)
+        public async Task<Image<Rgba32>?> GetProcessedImageAsync(string imageUrl, bool unlocked, bool hidden)
         {
             string cacheFilePath;
 
@@ -37,7 +39,7 @@ namespace RevoltUltimate.API.Fetcher
 
                 if (!File.Exists(cacheFilePath))
                 {
-                    DownloadImage(imageUrl, cacheFilePath);
+                    await DownloadImageAsync(imageUrl, cacheFilePath).ConfigureAwait(false);
                 }
             }
 
@@ -50,10 +52,17 @@ namespace RevoltUltimate.API.Fetcher
             return Path.Combine(_cacheDirectory, fileName);
         }
 
-        private void DownloadImage(string imageUrl, string cacheFilePath)
+        private async Task DownloadImageAsync(string imageUrl, string cacheFilePath)
         {
-            using var webClient = new System.Net.WebClient();
-            webClient.DownloadFile(imageUrl, cacheFilePath);
+            try
+            {
+                var imageBytes = await _httpClient.GetByteArrayAsync(imageUrl).ConfigureAwait(false);
+                await File.WriteAllBytesAsync(cacheFilePath, imageBytes).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error downloading image from {imageUrl}: {ex.Message}");
+            }
         }
 
         private Image<Rgba32> ProcessImage(string filePath, bool unlocked, bool hidden)

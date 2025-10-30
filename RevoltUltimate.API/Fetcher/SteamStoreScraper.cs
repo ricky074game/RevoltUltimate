@@ -14,14 +14,14 @@ namespace RevoltUltimate.API.Fetcher
             try
             {
                 var storeUrl = $"https://store.steampowered.com/app/{appId}/";
-                var storePageHtml = await _httpClient.GetStringAsync(storeUrl);
+                var storePageHtml = await _httpClient.GetStringAsync(storeUrl).ConfigureAwait(false);
                 var storeDoc = new HtmlDocument();
                 storeDoc.LoadHtml(storePageHtml);
 
                 var gameName = storeDoc.DocumentNode.SelectSingleNode("//div[@id='appHubAppName']")?.InnerText.Trim() ?? $"Unknown Game {appId}";
                 var gameDescription = storeDoc.DocumentNode.SelectSingleNode("//div[@class='game_description_snippet']")?.InnerText.Trim() ?? "";
 
-                var achievements = await ScrapeAchievementsAsync(appId);
+                var achievements = await ScrapeAchievementsAsync(appId).ConfigureAwait(false);
 
                 return new Game(gameName, "PC", null, gameDescription, "Emulator", appId, achievements, null);
             }
@@ -39,7 +39,7 @@ namespace RevoltUltimate.API.Fetcher
             {
                 int count = 0;
                 var achievementsUrl = $"https://steamcommunity.com/stats/{appId}/achievements/";
-                var achievementsPageHtml = await _httpClient.GetStringAsync(achievementsUrl);
+                var achievementsPageHtml = await _httpClient.GetStringAsync(achievementsUrl).ConfigureAwait(false);
                 var achievementsDoc = new HtmlDocument();
                 achievementsDoc.LoadHtml(achievementsPageHtml);
 

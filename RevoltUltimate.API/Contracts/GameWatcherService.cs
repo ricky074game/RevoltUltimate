@@ -168,7 +168,7 @@ namespace RevoltUltimate.API.Contracts
                         return null;
                     }
 
-                    currentGame = await GetGameData(appId);
+                    currentGame = await GetGameData(appId).ConfigureAwait(false);
                 }
 
                 if (currentGame == null) return null;
@@ -178,11 +178,11 @@ namespace RevoltUltimate.API.Contracts
 
                 if (fileExtension.Equals(".json", StringComparison.OrdinalIgnoreCase))
                 {
-                    unlockedStatuses = await ParseJsonAchievements(filePath);
+                    unlockedStatuses = await ParseJsonAchievements(filePath).ConfigureAwait(false);
                 }
                 else if (fileExtension.Equals(".ini", StringComparison.OrdinalIgnoreCase) || fileExtension.Equals(".txt", StringComparison.OrdinalIgnoreCase))
                 {
-                    unlockedStatuses = await ParseIniAchievements(filePath);
+                    unlockedStatuses = await ParseIniAchievements(filePath).ConfigureAwait(false);
                 }
                 else
                 {
@@ -206,7 +206,7 @@ namespace RevoltUltimate.API.Contracts
             {
                 try
                 {
-                    game = await SteamWeb.Instance.GetGameDetailsAsync(appId);
+                    game = await SteamWeb.Instance.GetGameDetailsAsync(appId).ConfigureAwait(false);
                     if (game != null)
                     {
                         Trace.WriteLine($"Fetched game data for AppID {appId} from Steam API.");
@@ -222,7 +222,7 @@ namespace RevoltUltimate.API.Contracts
             {
                 try
                 {
-                    var json = await File.ReadAllTextAsync(localAchievementPath);
+                    var json = await File.ReadAllTextAsync(localAchievementPath).ConfigureAwait(false);
                     game = JsonConvert.DeserializeObject<Game>(json);
                     if (game != null)
                     {
@@ -235,7 +235,7 @@ namespace RevoltUltimate.API.Contracts
             }
 
             Trace.WriteLine($"Falling back to web scraping for AppID {appId}.");
-            game = await _scraper.ScrapeGameDataAsync(appId);
+            game = await _scraper.ScrapeGameDataAsync(appId).ConfigureAwait(false);
             if (game != null)
             {
                 game.method = "Steam Emulator";
@@ -259,7 +259,7 @@ namespace RevoltUltimate.API.Contracts
 
         private async Task<Dictionary<string, (bool Unlocked, long UnlockTime)>> ParseJsonAchievements(string filePath)
         {
-            var content = await ReadFileWithRetryAsync(filePath);
+            var content = await ReadFileWithRetryAsync(filePath).ConfigureAwait(false);
             if (string.IsNullOrEmpty(content)) return new Dictionary<string, (bool Unlocked, long UnlockTime)>();
 
             var parsed = JsonConvert.DeserializeObject<Dictionary<string, GseAchievement>>(content);
@@ -272,7 +272,7 @@ namespace RevoltUltimate.API.Contracts
         private async Task<Dictionary<string, (bool Unlocked, long UnlockTime)>> ParseIniAchievements(string filePath)
         {
             var statuses = new Dictionary<string, (bool Unlocked, long UnlockTime)>();
-            var content = await ReadFileWithRetryAsync(filePath);
+            var content = await ReadFileWithRetryAsync(filePath).ConfigureAwait(false);
             if (string.IsNullOrEmpty(content)) return statuses;
 
             var regex = new Regex(@"\[(.*?)\]\s*HaveAchieved=(\d+)\s*HaveAchievedTime=(\d+)", RegexOptions.Singleline);
@@ -297,12 +297,12 @@ namespace RevoltUltimate.API.Contracts
             {
                 try
                 {
-                    return await File.ReadAllTextAsync(filePath);
+                    return await File.ReadAllTextAsync(filePath).ConfigureAwait(false);
                 }
                 catch (IOException)
                 {
                     if (i == maxRetries - 1) throw;
-                    await Task.Delay(delayMilliseconds);
+                    await Task.Delay(delayMilliseconds).ConfigureAwait(false);
                 }
             }
             return string.Empty;

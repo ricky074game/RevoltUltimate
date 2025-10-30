@@ -21,6 +21,8 @@ namespace RevoltUltimate.API.Fetcher
         private static readonly HttpClient HttpClient = new();
         private static readonly string UrlCacheDirectory = Path.Combine(Path.GetTempPath(), "RevoltUltimateUrlCache", "Banners");
         private static readonly string ImageCacheDirectory = Path.Combine(Path.GetTempPath(), "RevoltUltimateImageCache", "Banners");
+        private static readonly SHA256 _sha256 = SHA256.Create();
+        private static readonly object _sha256Lock = new object();
         public string? Name { get; set; }
 
         public GameBanner(string gameName)
@@ -32,8 +34,11 @@ namespace RevoltUltimate.API.Fetcher
 
         private string GetUrlCacheFilePath(string gameName)
         {
-            using var sha256 = SHA256.Create();
-            var hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(gameName.ToLowerInvariant()));
+            byte[] hashBytes;
+            lock (_sha256Lock)
+            {
+                hashBytes = _sha256.ComputeHash(Encoding.UTF8.GetBytes(gameName.ToLowerInvariant()));
+            }
             var hashString = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
             return Path.Combine(UrlCacheDirectory, $"{hashString}.json");
         }

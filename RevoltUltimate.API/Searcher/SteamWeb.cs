@@ -169,12 +169,13 @@ namespace RevoltUltimate.API.Searcher
 
             try
             {
-                var response = await _httpClient.GetStringAsync(url);
+                var response = await _httpClient.GetStringAsync(url).ConfigureAwait(false);
                 var apiResponse = JsonConvert.DeserializeObject<SteamApiResponse>(response);
 
                 if (apiResponse?.Response?.Games != null)
                 {
-                    foreach (var steamGameInfo in apiResponse.Response.Games)
+                    // Fetch achievements for all games in parallel
+                    var achievementTasks = apiResponse.Response.Games.Select(async steamGameInfo =>
                     {
                         string imageUrl = "";
                         if (!string.IsNullOrEmpty(steamGameInfo.ImgIconUrl) && steamGameInfo.AppId > 0)
@@ -185,14 +186,16 @@ namespace RevoltUltimate.API.Searcher
 
                         var game = new Game(steamGameInfo.Name, "Steam", imageUrl, "", "Steam Web API",
                             steamGameInfo.AppId);
-                        var achievements = await GetAchievementsForGameAsync(steamGameInfo.AppId);
+                        var achievements = await GetAchievementsForGameAsync(steamGameInfo.AppId).ConfigureAwait(false);
                         if (achievements != null)
                         {
                             game.AddAchievements(achievements);
                         }
 
-                        games.Add(game);
-                    }
+                        return game;
+                    }).ToList();
+
+                    games = (await Task.WhenAll(achievementTasks).ConfigureAwait(false)).ToList();
                 }
             }
             catch (Exception e)

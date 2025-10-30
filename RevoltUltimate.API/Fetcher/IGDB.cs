@@ -49,21 +49,27 @@ namespace RevoltUltimate.API.Fetcher
 
         public async Task<IEnumerable<SearchResult>?> SearchGamesAsync(string searchQuery)
         {
-            await _initializationTask;
+            await _initializationTask.ConfigureAwait(false);
 
             var requestContent = new StringContent($"search \"{searchQuery}\"; fields name, summary, cover.url;", Encoding.UTF8, "text/plain");
 
-            while (true)
+            const int maxRetries = 3;
+            for (int attempt = 0; attempt < maxRetries; attempt++)
             {
-                var response = await _httpClient.PostAsync("games", requestContent);
+                var response = await _httpClient.PostAsync("games", requestContent).ConfigureAwait(false);
 
                 if (response.IsSuccessStatusCode)
                 {
-                    return await response.Content.ReadFromJsonAsync<IEnumerable<SearchResult>>();
+                    return await response.Content.ReadFromJsonAsync<IEnumerable<SearchResult>>().ConfigureAwait(false);
                 }
-                // Consider adding more robust error handling or a limit to retries.
-                await Task.Delay(1000);
+
+                if (attempt < maxRetries - 1)
+                {
+                    await Task.Delay(1000 * (attempt + 1)).ConfigureAwait(false); // Exponential backoff
+                }
             }
+
+            return null; // Return null after max retries exceeded
         }
     }
 }

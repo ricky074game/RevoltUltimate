@@ -131,7 +131,7 @@ namespace RevoltUltimate.API.Searcher
 
         public async Task<List<Game>> GetOwnedGamesAsync()
         {
-            if (string.IsNullOrEmpty(_steamId64) && !(await FetchAndSetProfileInfoAsync()))
+            if (string.IsNullOrEmpty(_steamId64) && !(await FetchAndSetProfileInfoAsync().ConfigureAwait(false)))
             {
                 System.Diagnostics.Debug.WriteLine("SteamScrape: Not logged in or profile info not found, cannot get owned games.");
                 return new List<Game>();
@@ -142,7 +142,7 @@ namespace RevoltUltimate.API.Searcher
 
             try
             {
-                var response = await _httpClient.GetStringAsync(url);
+                var response = await _httpClient.GetStringAsync(url).ConfigureAwait(false);
                 var doc = new HtmlDocument();
                 doc.LoadHtml(response);
 
@@ -188,11 +188,21 @@ namespace RevoltUltimate.API.Searcher
             {
                 System.Diagnostics.Debug.WriteLine($"SteamScrape: Error fetching or parsing owned games: {ex.Message}");
             }
-            foreach (var game in games)
+            
+            // Fetch achievements for all games in parallel
+            var achievementTasks = games.Select(async game =>
             {
-                var achievements = await GetPlayerAchievementsAsync(uint.Parse(Regex.Match(game.description, @"\d+").Value));
-                game.AddAchievements(achievements);
-            }
+                var appIdMatch = Regex.Match(game.description, @"\d+");
+                if (appIdMatch.Success && uint.TryParse(appIdMatch.Value, out uint appId))
+                {
+                    var achievements = await GetPlayerAchievementsAsync(appId).ConfigureAwait(false);
+                    game.AddAchievements(achievements);
+                }
+                return game;
+            }).ToList();
+            
+            await Task.WhenAll(achievementTasks).ConfigureAwait(false);
+            
             return games;
         }
 
