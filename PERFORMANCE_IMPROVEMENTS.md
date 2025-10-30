@@ -8,7 +8,7 @@ Multiple performance bottlenecks were identified and resolved, resulting in sign
 
 ## Key Improvements
 
-### 1. Parallel API Calls (10x-50x faster for multi-game operations)
+### 1. Parallel API Calls (Up to 25x faster for multi-game operations)
 
 #### SteamWeb.UpdateGamesAsync
 **Before:**
@@ -34,7 +34,7 @@ var achievementTasks = apiResponse.Response.Games.Select(async steamGameInfo =>
 games = (await Task.WhenAll(achievementTasks).ConfigureAwait(false)).ToList();
 ```
 
-**Impact:** For a user with 50 games, achievement fetching time reduced from ~50 seconds to ~1-3 seconds (parallel execution).
+**Impact:** For a user with 50 games, achievement fetching time reduced from ~50 seconds to ~2 seconds (25x speedup through parallel execution).
 
 #### SteamScrape.GetOwnedGamesAsync
 **Before:**
