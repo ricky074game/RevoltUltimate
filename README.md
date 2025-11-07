@@ -25,7 +25,7 @@ Welcome to Revolt Ultimate! This is a modern .NET program to track achievements,
 
 - [x] Steam
 - [x] Steam Pirated
-- [ ] GOG
+- [x] GOG
 - [ ] GOG Pirated
 - [ ] Xbox
 - [ ] Epic
