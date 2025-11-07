@@ -2,8 +2,14 @@
 {
     public class SavedAccount
     {
-        public required string Username { get; set; }
-        public string? EncryptedSessionId { get; set; }
-        public string? EncryptedSteamLoginSecure { get; set; }
+        public string Username { get; set; }
+
+        // Steam session data
+        public string EncryptedSteamCookies { get; set; }
+
+        // GOG session data
+        public string EncryptedGOGAccessToken { get; set; }
+        public string EncryptedGOGRefreshToken { get; set; }
+        public string GogUserId { get; set; }
     }
 }

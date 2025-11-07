@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Linq;
 using RevoltUltimate.API.Accounts;
 using RevoltUltimate.API.Objects;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Text.RegularExpressions;
@@ -18,78 +19,104 @@ namespace RevoltUltimate.API.Searcher
         private bool _isLoggedIn;
         private string _steamId64;
         private string _username;
-
-        public Func<Tuple<string, string>> ShowLoginWindow { get; set; }
-
         public SteamScrape()
         {
             _cookieContainer = new CookieContainer();
-            var handler = new HttpClientHandler { CookieContainer = _cookieContainer };
+            var handler = new HttpClientHandler
+            {
+                CookieContainer = _cookieContainer,
+                UseCookies = true,
+                AllowAutoRedirect = true
+            };
             _httpClient = new HttpClient(handler);
-            _httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
         }
 
         public async Task<bool> TryRefreshSessionAsync()
         {
             if (!_isLoggedIn || string.IsNullOrEmpty(_username))
             {
-                System.Diagnostics.Debug.WriteLine("SteamScrape: Cannot refresh session, user not logged in.");
+                Trace.WriteLine("SteamScrape: Cannot refresh session, user not logged in.");
                 return false;
             }
 
             try
             {
-                var response = await _httpClient.GetAsync("https://steamcommunity.com/my/home");
-                response.EnsureSuccessStatusCode();
+                var communityResponse = await _httpClient.GetAsync("https://steamcommunity.com/my/home");
+                communityResponse.EnsureSuccessStatusCode();
 
-                if (response.RequestMessage.RequestUri.ToString().Contains("login"))
+                if (communityResponse.RequestMessage.RequestUri.ToString().Contains("login"))
                 {
-                    System.Diagnostics.Debug.WriteLine("SteamScrape: Session is invalid, clearing credentials.");
+                    Trace.WriteLine("SteamScrape: Community session is invalid, clearing credentials.");
                     Disconnect();
                     return false;
                 }
+                var communityUri = new Uri("https://steamcommunity.com/");
+                var storeUri = new Uri("https://store.steampowered.com/");
 
-                var cookies = _cookieContainer.GetCookies(new Uri("https://steamcommunity.com")).Cast<Cookie>();
-                var newSessionId = cookies.FirstOrDefault(c => c.Name == "sessionid")?.Value;
-                var newSteamLoginSecure = cookies.FirstOrDefault(c => c.Name == "steamLoginSecure")?.Value;
+                var allCookies = new List<Cookie>();
+                allCookies.AddRange(_cookieContainer.GetCookies(communityUri).Cast<Cookie>());
+                allCookies.AddRange(_cookieContainer.GetCookies(storeUri).Cast<Cookie>());
 
-                if (!string.IsNullOrEmpty(newSessionId) && !string.IsNullOrEmpty(newSteamLoginSecure))
+                var distinctCookies = allCookies
+                    .GroupBy(c => new { c.Name, c.Domain })
+                    .Select(g => g.First())
+                    .ToList();
+
+                if (distinctCookies.Any(c => c.Name == "steamLoginSecure"))
                 {
-                    AccountManager.SaveSteamSession(_username, newSessionId, newSteamLoginSecure);
-                    System.Diagnostics.Debug.WriteLine("SteamScrape: Session refreshed and saved successfully.");
+                    var serializableCookies = distinctCookies.Select(c => new SerializableCookie
+                    {
+                        Name = c.Name,
+                        Value = c.Value,
+                        Domain = c.Domain,
+                        Path = c.Path
+                    }).ToList();
+
+                    AccountManager.SaveSteamAccount(_username, serializableCookies);
+                    Trace.WriteLine("SteamScrape: Session refreshed and all cookies saved successfully.");
                 }
 
                 return true;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"SteamScrape: Error refreshing session: {ex.Message}");
+                Trace.WriteLine($"SteamScrape: Error refreshing session: {ex.Message}");
                 Disconnect();
                 return false;
             }
         }
 
 
-
-        public void SetSessionCookies(string steamLoginSecure, string sessionId, string username)
+        public void SetSessionCookies(List<SerializableCookie> cookies, string username)
         {
-            if (string.IsNullOrEmpty(steamLoginSecure) || string.IsNullOrEmpty(sessionId))
+            if (cookies == null || !cookies.Any())
             {
                 _isLoggedIn = false;
                 return;
             }
 
-            _cookieContainer.Add(new Cookie("steamLoginSecure", steamLoginSecure, "/", ".steamcommunity.com"));
-            _cookieContainer.Add(new Cookie("sessionid", sessionId, "/", ".steamcommunity.com"));
+            foreach (var cookie in cookies)
+            {
+                try
+                {
+                    _cookieContainer.Add(new Cookie(cookie.Name, cookie.Value, cookie.Path, cookie.Domain));
+                }
+                catch (CookieException ex)
+                {
+                    Trace.WriteLine($"Skipping invalid cookie '{cookie.Name}' during session load: {ex.Message}");
+                }
+            }
+
             _username = username;
             _isLoggedIn = true;
         }
 
         private async Task<bool> FetchAndSetProfileInfoAsync()
         {
+
             if (!_isLoggedIn)
             {
-                System.Diagnostics.Debug.WriteLine("SteamScrape: Cannot get profile info, user is not logged in.");
+                Trace.WriteLine("SteamScrape: Cannot get profile info, user is not logged in.");
                 return false;
             }
 
@@ -104,7 +131,7 @@ namespace RevoltUltimate.API.Searcher
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine("SteamScrape: Could not find SteamID on profile page.");
+                    Trace.WriteLine("SteamScrape: Could not find SteamID on profile page.");
                     return false;
                 }
 
@@ -115,16 +142,16 @@ namespace RevoltUltimate.API.Searcher
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine("SteamScrape: Could not find Persona Name on profile page.");
+                    Trace.WriteLine("SteamScrape: Could not find Persona Name on profile page.");
                     return false;
                 }
 
-                System.Diagnostics.Debug.WriteLine($"SteamScrape: Found SteamID: {_steamId64}, Username: {_username}");
+                Trace.WriteLine($"SteamScrape: Found SteamID: {_steamId64}, Username: {_username}");
                 return true;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"SteamScrape: Error fetching profile page to get info: {ex.Message}");
+                Trace.WriteLine($"SteamScrape: Error fetching profile page to get info: {ex.Message}");
                 return false;
             }
         }
@@ -133,7 +160,7 @@ namespace RevoltUltimate.API.Searcher
         {
             if (string.IsNullOrEmpty(_steamId64) && !(await FetchAndSetProfileInfoAsync()))
             {
-                System.Diagnostics.Debug.WriteLine("SteamScrape: Not logged in or profile info not found, cannot get owned games.");
+                Trace.WriteLine("SteamScrape: Not logged in or profile info not found, cannot get owned games.");
                 return new List<Game>();
             }
 
@@ -172,21 +199,21 @@ namespace RevoltUltimate.API.Searcher
                                 games.Add(game);
                             }
                         }
-                        System.Diagnostics.Debug.WriteLine($"SteamScrape: Successfully parsed {games.Count} games from profile page.");
+                        Trace.WriteLine($"SteamScrape: Successfully parsed {games.Count} games from profile page.");
                     }
                     else
                     {
-                        System.Diagnostics.Debug.WriteLine("SteamScrape: 'rgGames' JSON array not found or is not an array.");
+                        Trace.WriteLine("SteamScrape: 'rgGames' JSON array not found or is not an array.");
                     }
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine("SteamScrape: Could not find gameslist_config JSON on the games page.");
+                    Trace.WriteLine("SteamScrape: Could not find gameslist_config JSON on the games page.");
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"SteamScrape: Error fetching or parsing owned games: {ex.Message}");
+                Trace.WriteLine($"SteamScrape: Error fetching or parsing owned games: {ex.Message}");
             }
             foreach (var game in games)
             {
@@ -200,7 +227,7 @@ namespace RevoltUltimate.API.Searcher
         {
             if (string.IsNullOrEmpty(_steamId64) && !(await FetchAndSetProfileInfoAsync()))
             {
-                System.Diagnostics.Debug.WriteLine("SteamScrape: Not logged in or profile info not found, cannot get achievements.");
+                Trace.WriteLine("SteamScrape: Not logged in or profile info not found, cannot get achievements.");
                 return new List<Achievement>();
             }
 
@@ -216,7 +243,7 @@ namespace RevoltUltimate.API.Searcher
                 var achievementNodes = doc.DocumentNode.SelectNodes("//div[@class='achieveRow']");
                 if (achievementNodes == null)
                 {
-                    System.Diagnostics.Debug.WriteLine($"SteamScrape: No achievement rows found for AppID {appId}. The game might not have achievements or the profile is private.");
+                    Trace.WriteLine($"SteamScrape: No achievement rows found for AppID {appId}. The game might not have achievements or the profile is private.");
                     return achievements;
                 }
 
@@ -271,7 +298,7 @@ namespace RevoltUltimate.API.Searcher
                             Unlocked: unlocked,
                             DateTimeUnlocked: unlockedTime,
                             Difficulty: 1,
-                            apiName: "", // Not available via scraping
+                            apiName: "",
                             progress: hasProgress,
                             currentProgress: currentProgress,
                             maxProgress: maxProgress,
@@ -280,11 +307,11 @@ namespace RevoltUltimate.API.Searcher
                         achievements.Add(achievement);
                     }
                 }
-                System.Diagnostics.Debug.WriteLine($"SteamScrape: Successfully parsed {achievements.Count} achievements for AppID {appId}.");
+                Trace.WriteLine($"SteamScrape: Successfully parsed {achievements.Count} achievements for AppID {appId}.");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"SteamScrape: Error fetching or parsing achievements for AppID {appId}: {ex.Message}");
+                Trace.WriteLine($"SteamScrape: Error fetching or parsing achievements for AppID {appId}: {ex.Message}");
             }
 
             return achievements;
@@ -294,15 +321,23 @@ namespace RevoltUltimate.API.Searcher
         {
             if (!string.IsNullOrEmpty(_username))
             {
-                AccountManager.ClearSteamSession(_username);
+                AccountManager.DeleteAccount(_username);
             }
 
             _isLoggedIn = false;
             _steamId64 = null;
             _username = null;
-            _cookieContainer.Add(new Cookie("steamLoginSecure", DateTime.Now.AddDays(-1).ToString(), "/", ".steamcommunity.com"));
-            _cookieContainer.Add(new Cookie("sessionid", DateTime.Now.AddDays(-1).ToString(), "/", ".steamcommunity.com"));
-            System.Diagnostics.Debug.WriteLine("SteamScrape: User logged out, cookies cleared and stored session deleted.");
+
+            const string steamCommunityDomain = ".steamcommunity.com";
+            const string steamStoreDomain = ".store.steampowered.com";
+            var expiredCookieDate = DateTime.Now.AddDays(-1);
+
+            _cookieContainer.Add(new Cookie("steamLoginSecure", "") { Domain = steamCommunityDomain, Expires = expiredCookieDate });
+            _cookieContainer.Add(new Cookie("sessionid", "") { Domain = steamCommunityDomain, Expires = expiredCookieDate });
+            _cookieContainer.Add(new Cookie("steamLoginSecure", "") { Domain = steamStoreDomain, Expires = expiredCookieDate });
+            _cookieContainer.Add(new Cookie("sessionid", "") { Domain = steamStoreDomain, Expires = expiredCookieDate });
+
+            Trace.WriteLine("SteamScrape: User logged out, cookies cleared and stored session deleted.");
         }
     }
 }

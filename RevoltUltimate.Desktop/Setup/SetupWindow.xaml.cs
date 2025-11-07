@@ -22,6 +22,12 @@ namespace RevoltUltimate.Desktop.Setup
         public SetupWindow()
         {
             InitializeComponent();
+            var user = new User
+            {
+                UserName = "TimmyFallon",
+                Xp = 0,
+                Games = new ObservableCollection<Game>()
+            };
             Progress1.DataContext = new ProgressViewModel { IsActive = true };
             Progress2.DataContext = new ProgressViewModel { IsActive = false };
             Progress3.DataContext = new ProgressViewModel { IsActive = false };

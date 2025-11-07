@@ -45,17 +45,13 @@ namespace RevoltUltimate.Desktop.Windows
 
         private void AppendMessage(string message)
         {
-            string timestampedMessage = $"[{DateTime.Now:HH:mm:ss}] {message}";
+            TraceHistory.Add(message);
 
-            // Store the message in the history
-            TraceHistory.Add(timestampedMessage);
-
-            // Append the message to the TextBox if it's attached
             if (_outputTextBox != null)
             {
                 _outputTextBox.Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    _outputTextBox.AppendText(timestampedMessage);
+                    _outputTextBox.AppendText(message);
                     _outputTextBox.ScrollToEnd();
                 }));
             }

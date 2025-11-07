@@ -1,14 +1,13 @@
 ﻿using Hardcodet.Wpf.TaskbarNotification;
 using Newtonsoft.Json;
+using RevoltUltimate.API.Accounts;
 using RevoltUltimate.API.Contracts;
 using RevoltUltimate.API.Notification;
 using RevoltUltimate.API.Objects;
 using RevoltUltimate.API.Searcher;
-using RevoltUltimate.API.Update;
 using RevoltUltimate.Desktop.Pages;
 using RevoltUltimate.Desktop.Windows;
 using System.IO;
-using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -40,14 +39,7 @@ namespace RevoltUltimate.Desktop
         {
             InitializeComponent();
             String profilePicturePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RevoltUltimate", "profile.jpg");
-            if (File.Exists(profilePicturePath))
-            {
-                ProfilePicturePath = profilePicturePath;
-            }
-            else
-            {
-                ProfilePicturePath = "Images/profilePic.png";
-            }
+            ProfilePicturePath = File.Exists(profilePicturePath) ? profilePicturePath : "Images/profilePic.png";
             ConsoleMenuItem.Visibility = App.IsDebugMode ? Visibility.Visible : Visibility.Collapsed;
             ConsoleCometMenuItem.Visibility = App.IsDebugMode ? Visibility.Visible : Visibility.Collapsed;
             DataContext = this;
@@ -55,7 +47,7 @@ namespace RevoltUltimate.Desktop
             NotificationSystem.DataContext = NotificationViewModel;
             UpdateXpBar();
             UpdateLevelAndTooltipText();
-            AddGamesToGrid(false, true);
+            _ = AddGamesToGrid(false, true);
 
             InitializeTaskbarIcon();
             InitializeBackgroundTask();
@@ -187,50 +179,75 @@ namespace RevoltUltimate.Desktop
             System.Diagnostics.Debug.WriteLine($"Background task running at: {DateTime.Now}");
             string taskName = "Checking for new achievements";
             NotificationViewModel.AddTask(taskName);
+            var savedAccount = AccountManager.GetSavedAccounts().FirstOrDefault();
 
             try
             {
-                var achievementTasks = CurrentUser.Games
-                    .Select(game =>
-                    {
-                        Update updater = null;
-                        if (game.method.Equals("Steam Local", StringComparison.OrdinalIgnoreCase))
-                        {
-                            updater = new SteamLocalUpdate();
-                        }
-                        else if (game.method.Equals("Steam Web API", StringComparison.OrdinalIgnoreCase))
-                        {
-                            updater = new SteamUpdate();
-                        }
-
-                        return updater != null
-                            ? updater.CheckForNewAchievementsAsync(game)
-                            : Task.FromResult<List<Achievement>>(new List<Achievement>());
-                    })
-                    .ToList();
-
-                var allNewAchievements = await Task.WhenAll(achievementTasks);
-
-                bool foundAny = false;
-                for (int i = 0; i < CurrentUser.Games.Count; i++)
+                // --- OPTIMIZATION: Run Steam and GOG fetching in parallel ---
+                var steamTask = Task.Run(async () =>
                 {
-                    var newAchievements = allNewAchievements[i];
-                    if (newAchievements.Any())
+                    var games = new List<Game>();
+                    if (savedAccount != null)
                     {
-                        foundAny = true;
-                        System.Diagnostics.Debug.WriteLine("FOUND NEW ACHIEVEMENT!!");
-                        foreach (var achievement in newAchievements)
+                        var steamSessionCookies = AccountManager.GetSteamSession(savedAccount.Username);
+                        if (steamSessionCookies != null && steamSessionCookies.Any())
                         {
-                            AchievementWindow.ShowNotification(achievement, App.Settings.CustomAnimationDllPath);
+                            SteamScrape.Instance.SetSessionCookies(steamSessionCookies, savedAccount.Username);
+                            games = await SteamScrape.Instance.GetOwnedGamesAsync();
                         }
                     }
+                    return games;
+                });
+
+                var gogTask = Task.Run(async () =>
+                {
+                    var games = new List<Game>();
+                    if (savedAccount != null)
+                    {
+                        var gogTokens = AccountManager.GetGOGTokens(savedAccount.Username);
+                        if (!string.IsNullOrEmpty(gogTokens.AccessToken))
+                        {
+                            games = await GOG.Instance.GetOwnedGamesWithAchievementsAsync();
+                        }
+                    }
+                    return games;
+                });
+                await Task.WhenAll(steamTask, gogTask);
+                var allLiveGames = (await steamTask).Concat(await gogTask).ToList();
+                bool foundAny = false;
+                var processingTasks = new List<Task>();
+                foreach (var liveGame in allLiveGames)
+                {
+                    var localGame = CurrentUser.Games.FirstOrDefault(g => g.appid == liveGame.appid && g.platform == liveGame.platform);
+                    if (localGame != null)
+                    {
+                        processingTasks.Add(Task.Run(() =>
+                        {
+                            var liveAchievements = liveGame.achievements
+                                .GroupBy(a => a.id)
+                                .ToDictionary(g => g.Key, g => g.First());
+
+                            foreach (var localAch in localGame.achievements)
+                            {
+                                if (!localAch.unlocked && liveAchievements.TryGetValue(localAch.id, out var liveAch) && liveAch.unlocked)
+                                {
+                                    localAch.SetUnlockedStatus(true, liveAch.datetimeunlocked);
+                                    Dispatcher.Invoke(() =>
+                                    {
+                                        AchievementWindow.ShowNotification(localAch, App.Settings?.CustomAnimationDllPath);
+                                    });
+                                    foundAny = true;
+                                }
+                            }
+                        }));
+                    }
                 }
+                await Task.WhenAll(processingTasks);
                 if (foundAny)
                 {
                     Save();
                 }
                 NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Success);
-                Save();
             }
             catch (Exception ex)
             {
@@ -383,8 +400,6 @@ namespace RevoltUltimate.Desktop
 
         private async Task AddGamesToGrid(bool back, bool load)
         {
-            var allGames = new List<Game>();
-
             MainContentControl.Content = new ScrollViewer
             {
                 Content = _gamesGrid,
@@ -392,111 +407,52 @@ namespace RevoltUltimate.Desktop
                 HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
             };
 
-            if (!back)
+            _gamesGrid.Children.Clear();
+            AddSelectGamesToGrid(CurrentUser.Games);
+
+            if (load)
             {
-                if (load)
+                var allFetchedGames = new List<Game>();
+                if (App.Settings != null && !string.IsNullOrEmpty(App.Settings.SteamApiKey) && !string.IsNullOrWhiteSpace(App.Settings.SteamId))
                 {
-                    if (CurrentUser.Games.Any())
+                    NotificationViewModel.AddTask("Fetching games from Steam API");
+                    var steamApiGames = await SteamWeb.Instance.Update();
+                    allFetchedGames.AddRange(steamApiGames);
+                    NotificationViewModel.UpdateTaskStatus("Fetching games from Steam API", NotificationStatus.Success);
+                }
+
+                NotificationViewModel.AddTask("Fetching games from Steam profile");
+                var steamScrapeGames = await SteamScrape.Instance.GetOwnedGamesAsync();
+                allFetchedGames.AddRange(steamScrapeGames);
+                NotificationViewModel.UpdateTaskStatus("Fetching games from Steam profile", NotificationStatus.Success);
+                NotificationViewModel.AddTask("Fetching games from GOG");
+                var gogGames = await GOG.Instance.GetOwnedGamesWithAchievementsAsync();
+                allFetchedGames.AddRange(gogGames);
+                NotificationViewModel.UpdateTaskStatus("Fetching games from GOG", NotificationStatus.Success);
+
+                var newGamesFound = new List<Game>();
+                foreach (var fetchedGame in allFetchedGames)
+                {
+                    var existingGame = CurrentUser.Games.FirstOrDefault(g => g.appid == fetchedGame.appid && g.platform == fetchedGame.platform);
+                    if (existingGame == null)
                     {
-                        System.Diagnostics.Debug.WriteLine($"Loaded {CurrentUser.Games.Count} local games.");
-                        AddSelectGamesToGrid(CurrentUser.Games);
+                        CurrentUser.Games.Add(fetchedGame);
+                        newGamesFound.Add(fetchedGame);
                     }
                     else
                     {
-                        System.Diagnostics.Debug.WriteLine("No local games found in CurrentUser.Games.");
+                        existingGame.name = fetchedGame.name;
+                        existingGame.imageUrl = fetchedGame.imageUrl;
                     }
                 }
-                if (App.Settings != null && !string.IsNullOrEmpty(App.Settings.SteamApiKey) &&
-                !string.IsNullOrWhiteSpace(App.Settings.SteamId))
+
+                if (newGamesFound.Any())
                 {
-                    if (SteamWeb.Instance.IsSteamApiReady)
-                    {
-                        string taskName = "Fetching games from Steam API";
-                        NotificationViewModel.AddTask(taskName);
-
-                        try
-                        {
-                            List<Game> steamGames = await SteamWeb.Instance.Update();
-                            if (steamGames != null)
-                            {
-                                foreach (var steamGame in steamGames)
-                                {
-                                    bool gameExists = allGames.Any(g =>
-                                        g.name.Equals(steamGame.name, StringComparison.OrdinalIgnoreCase) &&
-                                        g.platform.Equals(steamGame.platform, StringComparison.OrdinalIgnoreCase));
-
-                                    if (!gameExists)
-                                    {
-                                        allGames.Add(steamGame);
-                                        System.Diagnostics.Debug.WriteLine(
-                                            $"Added game from Steam API: {steamGame.name} ({steamGame.platform})");
-                                    }
-                                }
-                            }
-
-                            NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Success);
-                        }
-                        catch (HttpRequestException httpEx)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"Error fetching games from Steam API: {httpEx.Message}");
-                            NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed, httpEx.Message);
-                        }
-                        catch (Exception ex)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"Error in Steam API fetch: {ex.Message}");
-                            NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed,
-                                "An unexpected error occurred.");
-                        }
-                    }
-                    else
-                    {
-                        System.Diagnostics.Debug.WriteLine("Steam Web API is not ready (check API key and Steam ID).");
-                    }
+                    AddSelectGamesToGrid(newGamesFound);
                 }
-
-                if (SteamScrape.Instance != null)
-                {
-                    string taskName = "Fetching games from Steam Local";
-                    NotificationViewModel.AddTask(taskName);
-
-                    try
-                    {
-                        List<Game> localSteamGames = await SteamScrape.Instance.GetOwnedGamesAsync();
-                        foreach (var localSteamGame in localSteamGames)
-                        {
-                            bool gameExists = allGames.Any(g =>
-                                g.name.Equals(localSteamGame.name, StringComparison.OrdinalIgnoreCase) &&
-                                g.platform.Equals(localSteamGame.platform, StringComparison.OrdinalIgnoreCase));
-
-                            if (!gameExists)
-                            {
-                                allGames.Add(localSteamGame);
-                                System.Diagnostics.Debug.WriteLine($"Added game from Steam Local: {localSteamGame.name} ({localSteamGame.platform})");
-                            }
-                        }
-                        NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Success);
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Error fetching games from Steam Local: {ex.Message}");
-                        NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed, "An unexpected error occurred.");
-                    }
-                }
-
-                foreach (var game in allGames)
-                {
-                    bool gameExistsInCurrentUser = CurrentUser.Games.Any(g =>
-                        g.name.Equals(game.name, StringComparison.OrdinalIgnoreCase) &&
-                        g.platform.Equals(game.platform, StringComparison.OrdinalIgnoreCase));
-
-                    if (!gameExistsInCurrentUser)
-                    {
-                        CurrentUser.Games.Add(game);
-                    }
-                }
-
-                AddSelectGamesToGrid(CurrentUser.Games);
             }
+
+            Save();
         }
         public void AddGame(Game game)
         {

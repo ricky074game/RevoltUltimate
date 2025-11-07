@@ -1,5 +1,5 @@
 ﻿using RevoltUltimate.API.Accounts;
-using RevoltUltimate.Desktop.Setup.Steam;
+using RevoltUltimate.Desktop.Setup.Login;
 using System.Windows;
 using System.Windows.Controls;
 

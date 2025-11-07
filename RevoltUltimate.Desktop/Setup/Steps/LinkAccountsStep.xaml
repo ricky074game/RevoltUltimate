@@ -19,7 +19,14 @@
             <Border Width="100" Height="100" Background="#1e1e1e" CornerRadius="10" Margin="10" MouseDown="LogoBox_Click" Tag="Steam">
                 <Grid>
                     <Image Source="/Icons/Steam.png" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    <Path x:Name="Checkmark" Data="M10 15l-3-3 1.5-1.5L10 12l4.5-4.5L16 9l-6 6z" Fill="Transparent" Stroke="White" StrokeThickness="2" Visibility="Collapsed" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="5"/>
+                    <Path x:Name="Checksteam" Data="M10 15l-3-3 1.5-1.5L10 12l4.5-4.5L16 9l-6 6z" Fill="Transparent" Stroke="White" StrokeThickness="2" Visibility="Collapsed" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="5"/>
+
+                </Grid>
+            </Border>
+            <Border Width="100" Height="100" Background="#1e1e1e" CornerRadius="10" Margin="10" MouseDown="LogoBox_Click" Tag="GOG">
+                <Grid>
+                    <Image Source="/Icons/GOG.png" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Path x:Name="Checkgog" Data="M10 15l-3-3 1.5-1.5L10 12l4.5-4.5L16 9l-6 6z" Fill="Transparent" Stroke="White" StrokeThickness="2" Visibility="Collapsed" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="5"/>
                 </Grid>
             </Border>
         </UniformGrid>

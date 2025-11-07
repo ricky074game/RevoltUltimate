@@ -31,14 +31,14 @@ namespace RevoltUltimate.Desktop
             get => Decrypt(EncryptedSteamId);
             set => EncryptedSteamId = Encrypt(value);
         }
-        [JsonProperty("EncryptedSteamApiKey")]
+        [JsonProperty(nameof(EncryptedSteamApiKey))]
         public string? EncryptedSteamApiKeyBase64
         {
             get => EncryptedSteamApiKey != null ? Convert.ToBase64String(EncryptedSteamApiKey) : null;
             set => EncryptedSteamApiKey = !string.IsNullOrEmpty(value) ? Convert.FromBase64String(value) : null;
         }
 
-        [JsonProperty("EncryptedSteamId")]
+        [JsonProperty(nameof(EncryptedSteamId))]
         public string? EncryptedSteamIdBase64
         {
             get => EncryptedSteamId != null ? Convert.ToBase64String(EncryptedSteamId) : null;

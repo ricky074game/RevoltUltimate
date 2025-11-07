@@ -30,7 +30,7 @@ namespace RevoltUltimate.Desktop.Pages
         {
             InitializeComponent();
             _game = game;
-            DataContext = _game; // Set DataContext to the game object
+            DataContext = _game;
             _gameBannerFetcher = new GameBanner(_game.name);
             InitializeGameDataAsync();
             InitializeSparkleAnimation();

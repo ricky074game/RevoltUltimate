@@ -6,8 +6,8 @@ using RevoltUltimate.API.Objects;
 using RevoltUltimate.API.Searcher;
 using RevoltUltimate.API.Update;
 using RevoltUltimate.Desktop.Setup;
-using RevoltUltimate.Desktop.Setup.Steam;
 using RevoltUltimate.Desktop.Windows;
+using Serilog;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -31,7 +31,7 @@ namespace RevoltUltimate.Desktop
         private CancellationTokenSource _appCancellationTokenSource = new CancellationTokenSource();
         private Game? _activeCometGame;
         public static CometConsoleWindow? CometConsoleWindow { get; private set; }
-        private CometManager? _cometManager;
+        public static CometManager? CometManager { get; private set; }
 
         private async void Application_Startup(object sender, StartupEventArgs e)
         {
@@ -42,8 +42,37 @@ namespace RevoltUltimate.Desktop
             {
                 IsDebugMode = true;
             }
-            Dispatcher.UnhandledException += App_DispatcherUnhandledException;
-            AppDomain.CurrentDomain.UnhandledException += AppDomain_UnhandledException;
+
+            if (IsDebugMode)
+            {
+                string logDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+                Directory.CreateDirectory(logDirectory);
+                Log.Logger = new LoggerConfiguration()
+                    .WriteTo.File(Path.Combine(logDirectory, "revolut.log"), rollingInterval: RollingInterval.Day)
+                    .WriteTo.Console()
+                    .WriteTo.Debug()
+                    .MinimumLevel.Debug()
+                    .CreateLogger();
+                AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
+                {
+                    Log.Fatal(args.ExceptionObject as Exception, "Unhandled exception");
+                };
+                AppDomain.CurrentDomain.FirstChanceException += (sender, eventArgs) =>
+                {
+                    Log.Debug(eventArgs.Exception, "First-chance exception");
+                };
+                DispatcherUnhandledException += (sender, args) =>
+                {
+                    Log.Error(args.Exception, "Dispatcher unhandled exception");
+                    args.Handled = true;
+                };
+
+                TaskScheduler.UnobservedTaskException += (sender, args) =>
+                {
+                    Log.Error(args.Exception, "Unobserved task exception");
+                    args.SetObserved();
+                };
+            }
             _globalTraceListener = new TextBoxTraceListener();
             Trace.Listeners.Add(_globalTraceListener);
             Trace.WriteLine("Application has begun startup.");
@@ -99,50 +128,50 @@ namespace RevoltUltimate.Desktop
                 Current.Shutdown();
             }
         }
-
-        private void AppDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        private void LogException(Exception? ex, string source)
         {
-            Trace.WriteLine($"An unhandled non-UI exception occurred: {e.ExceptionObject}");
-            _cometManager?.Stop();
-        }
+            if (ex == null)
+            {
+                Log.Error("[{Source}] Unknown exception occurred.", source);
+                return;
+            }
 
-        private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
-        {
-            Trace.WriteLine($"An unhandled UI exception occurred: {e.Exception}");
-            _cometManager?.Stop();
-            MessageBox.Show("An unexpected error occurred and the application will now close.", "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            Log.Error(ex, "[{Source}] Exception: {Message}", source, ex.Message);
+            if (ex.InnerException != null)
+            {
+                Log.Error(ex.InnerException, "[{Source}] Inner Exception: {Message}", source, ex.InnerException.Message);
+            }
         }
-
         private void InitializeCometManager()
         {
-            _cometManager = new CometManager();
+            CometManager = new CometManager();
             CometConsoleWindow = new CometConsoleWindow();
 
-            _cometManager.CometLogReceived += (log) =>
+            CometManager.CometLogReceived += (log) =>
             {
                 CometConsoleWindow?.AppendLog(log);
             };
 
-            _cometManager.CometErrorLogReceived += (errorLog) =>
+            CometManager.CometErrorLogReceived += (errorLog) =>
             {
                 CometConsoleWindow?.AppendLog(errorLog);
             };
 
-            _cometManager.Start(CurrentUser?.UserName, IsDebugMode);
+            CometManager.Start(CurrentUser?.UserName, IsDebugMode);
         }
 
         private void InitializeServices()
         {
             _achievementProvider = new AchievementProvider();
-            if (_cometManager != null)
+            if (CometManager != null)
             {
-                _cometManager.Service.GameConnected += OnCometGameConnected;
-                _cometManager.Service.AchievementUnlocked += OnCometAchievementUnlocked;
+                CometManager.Service.GameConnected += OnCometGameConnected;
+                CometManager.Service.AchievementUnlocked += OnCometAchievementUnlocked;
             }
         }
         private async void OnCometGameConnected(GameConnectedData gameData)
         {
-            if (CurrentUser == null || _achievementProvider == null || _cometManager == null) return;
+            if (CurrentUser == null || _achievementProvider == null || CometManager == null) return;
 
             var existingGame = CurrentUser.Games.FirstOrDefault(g => g.appid == gameData.Id);
 
@@ -152,7 +181,7 @@ namespace RevoltUltimate.Desktop
                 string achievementFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "RevoltAchievement", "Achievements", "GOG", $"{gameData.Id}.json");
                 if (!File.Exists(achievementFilePath))
                 {
-                    Trace.WriteLine($"AchievementProvider: Achievement file not found for new game {gameData.Id}. Cannot add game.");
+                    Trace.WriteLine($"Achievement file not found for new game {gameData.Id}. Cannot add game.");
                     return;
                 }
 
@@ -209,7 +238,7 @@ namespace RevoltUltimate.Desktop
                 catch (Exception ex)
                 {
                     Trace.WriteLine($"Error loading game data for new game {gameData.Id}: {ex.Message}");
-                    return; // Stop if we can't process the new game's data
+                    return;
                 }
             }
             else
@@ -220,7 +249,6 @@ namespace RevoltUltimate.Desktop
             _activeCometGame = existingGame;
             Trace.WriteLine($"Active Comet game set to: {_activeCometGame.name}");
 
-            // Send the achievement list to Comet, using the correct unlock times.
             if (existingGame.achievements.Any())
             {
                 var achievementListData = existingGame.achievements.Select(a =>
@@ -252,7 +280,7 @@ namespace RevoltUltimate.Desktop
                     Data = achievementListData
                 };
 
-                await _cometManager.Service.SendJsonAsync(message);
+                await CometManager.Service.SendJsonAsync(message);
             }
         }
 
@@ -305,7 +333,6 @@ namespace RevoltUltimate.Desktop
                 _gameWatcherService.StartWatching(Settings.WatchedFolders);
             }
 
-            // Re-watch manually tracked files from the previous session
             if (CurrentUser?.Games != null)
             {
                 foreach (var game in CurrentUser.Games)
@@ -501,53 +528,43 @@ namespace RevoltUltimate.Desktop
 
         private async Task SetupLinkers(BootScreen bootScreen)
         {
-            bootScreen.UpdateStatus("Setting up Steam integration...");
-
-            if (Settings != null && !string.IsNullOrEmpty(Settings.SteamApiKey) && !string.IsNullOrEmpty(Settings.SteamId))
+            var savedAccount = AccountManager.GetSavedAccounts().FirstOrDefault();
+            if (savedAccount == null || CurrentUser == null)
             {
-                SteamWeb.InitializeSharedInstance(Settings.SteamApiKey, Settings.SteamId);
+                Debug.WriteLine("No saved accounts or current user found. Skipping linker setup.");
+                return;
             }
 
-            SteamScrape.Instance.ShowLoginWindow = () =>
+            bootScreen.UpdateStatus("Authenticating Steam...");
+            var steamSessionCookies = AccountManager.GetSteamSession(savedAccount.Username);
+            if (steamSessionCookies.Any())
             {
-                var loginWindow = new SteamWebLoginWindow();
-                if (loginWindow.ShowDialog() == true)
-                {
-                    return new Tuple<string, string>(loginWindow.SteamLoginSecure, loginWindow.SessionId);
-                }
-                return null;
-            };
-
-            var savedAccount = AccountManager.GetSavedAccounts().FirstOrDefault();
-            if (savedAccount != null)
-            {
-                var session = AccountManager.GetSteamSession(savedAccount.Username);
-
-                bootScreen.UpdateStatus($"Logging in as {savedAccount.Username}...");
-                SteamScrape.Instance.SetSessionCookies(session.Item1, session.Item2, savedAccount.Username);
-
+                SteamScrape.Instance.SetSessionCookies(steamSessionCookies, savedAccount.Username);
                 bool sessionIsValid = await SteamScrape.Instance.TryRefreshSessionAsync();
-
                 if (sessionIsValid)
                 {
-                    Debug.WriteLine($"Successfully logged in as {savedAccount.Username}.");
+                    Debug.WriteLine($"Successfully authenticated with Steam as {savedAccount.Username}.");
                     SetupSessionRefreshTimer();
                 }
                 else
                 {
-                    MessageBox.Show("Your saved Steam session has expired. Please log in again.", "Session Expired", MessageBoxButton.OK, MessageBoxImage.Information);
+                    Debug.WriteLine("Steam session has expired.");
                 }
             }
-            else
+
+            bootScreen.UpdateStatus("Authenticating GOG...");
+            var gogTokens = AccountManager.GetGOGTokens(savedAccount.Username);
+            if (!string.IsNullOrEmpty(gogTokens.AccessToken))
             {
-                Debug.WriteLine("No saved Steam account found.");
+                GOG.Instance.SetSession(gogTokens.AccessToken, gogTokens.RefreshToken, gogTokens.GogUserId);
+                Debug.WriteLine("Logged into GOG");
             }
         }
         private async Task InitializeCometConnection()
         {
-            if (_cometManager != null)
+            if (CometManager != null)
             {
-                await _cometManager.Service.StartAsync(_appCancellationTokenSource.Token);
+                await CometManager.Service.StartAsync(_appCancellationTokenSource.Token);
             }
         }
 
@@ -632,7 +649,7 @@ namespace RevoltUltimate.Desktop
         {
             _appCancellationTokenSource.Cancel();
             _gameWatcherService?.StopWatching();
-            _cometManager?.Stop();
+            CometManager?.Stop();
             base.OnExit(e);
         }
     }

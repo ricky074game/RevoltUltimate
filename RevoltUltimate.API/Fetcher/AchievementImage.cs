@@ -2,6 +2,7 @@
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using System.IO;
+using System.Net;
 
 namespace RevoltUltimate.API.Fetcher
 {
@@ -25,6 +26,11 @@ namespace RevoltUltimate.API.Fetcher
 
         public Image<Rgba32>? GetProcessedImage(string imageUrl, bool unlocked, bool hidden)
         {
+            if (string.IsNullOrEmpty(imageUrl))
+            {
+                return CreateBlankWhiteImage();
+            }
+
             string cacheFilePath;
 
             if (File.Exists(imageUrl))
@@ -37,16 +43,27 @@ namespace RevoltUltimate.API.Fetcher
 
                 if (!File.Exists(cacheFilePath))
                 {
-                    DownloadImage(imageUrl, cacheFilePath);
+                    try
+                    {
+                        DownloadImage(imageUrl, cacheFilePath);
+                    }
+                    catch (WebException)
+                    {
+                        return CreateBlankWhiteImage();
+                    }
                 }
             }
 
             return ProcessImage(cacheFilePath, unlocked, hidden);
         }
+        private Image<Rgba32> CreateBlankWhiteImage(int width = 64, int height = 64)
+        {
+            return new Image<Rgba32>(width, height, Color.White);
+        }
 
         private string GetCachedImagePath(string imageUrl)
         {
-            string fileName = Path.GetFileName(imageUrl);
+            string fileName = Path.GetFileName(new Uri(imageUrl).LocalPath);
             return Path.Combine(_cacheDirectory, fileName);
         }
 
@@ -64,7 +81,6 @@ namespace RevoltUltimate.API.Fetcher
             {
                 image.Mutate(x => x.Grayscale());
             }
-
             if (!unlocked && hidden)
             {
                 image.Mutate(x => x.GaussianBlur(5));

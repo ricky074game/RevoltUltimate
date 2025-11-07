@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using RevoltUltimate.API.Objects;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -7,117 +8,118 @@ namespace RevoltUltimate.API.Accounts
 {
     public static class AccountManager
     {
-        private static readonly string FilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RevoltUltimate", "steam_accounts.json");
-        private static readonly byte[] Entropy = { 5, 8, 2, 1, 4 };
+        private static readonly string AccountsFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RevoltUltimate", "accounts.json");
+        private static readonly byte[] Entropy = { 1, 2, 3, 4, 5, 6, 7, 8 }; // Keep this constant
 
-        public static void SaveSteamSession(string username, string sessionId, string steamLoginSecure)
+        static AccountManager()
         {
-            var accounts = GetSavedAccounts();
-            var existingAccount = accounts.FirstOrDefault(a => a.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
-
-            if (existingAccount != null)
-            {
-                existingAccount.EncryptedSessionId = Encrypt(sessionId);
-                existingAccount.EncryptedSteamLoginSecure = Encrypt(steamLoginSecure);
-            }
-            else
-            {
-                accounts.Add(new SavedAccount
-                {
-                    Username = username,
-                    EncryptedSessionId = Encrypt(sessionId),
-                    EncryptedSteamLoginSecure = Encrypt(steamLoginSecure),
-                });
-            }
-
-            SaveAccountsToFile(accounts);
+            Directory.CreateDirectory(Path.GetDirectoryName(AccountsFilePath));
         }
 
-        public static Tuple<string, string>? GetSteamSession(string username)
+        public static void SaveSteamAccount(string username, List<SerializableCookie> cookies)
         {
-            var account = GetSavedAccounts().FirstOrDefault(a => a.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
-            if (account == null || string.IsNullOrEmpty(account.EncryptedSessionId) || string.IsNullOrEmpty(account.EncryptedSteamLoginSecure))
+            var accounts = LoadAccounts();
+            var account = accounts.FirstOrDefault(a => a.Username.Equals(username, StringComparison.OrdinalIgnoreCase)) ?? new SavedAccount { Username = username };
+
+            string cookiesJson = JsonConvert.SerializeObject(cookies);
+            account.EncryptedSteamCookies = Protect(cookiesJson);
+
+            if (!accounts.Any(a => a.Username.Equals(username, StringComparison.OrdinalIgnoreCase)))
             {
-                return null;
+                accounts.Add(account);
             }
 
-            string sessionId = Decrypt(account.EncryptedSessionId);
-            string steamLoginSecure = Decrypt(account.EncryptedSteamLoginSecure);
-
-            if (string.IsNullOrEmpty(sessionId) || string.IsNullOrEmpty(steamLoginSecure))
-            {
-                return null;
-            }
-
-            return new Tuple<string, string>(steamLoginSecure, sessionId);
+            SaveAccounts(accounts);
         }
 
-        public static void ClearSteamSession(string username)
+        public static void SaveGOGTokens(string username, string accessToken, string refreshToken, string gogUserId)
         {
-            var accounts = GetSavedAccounts();
-            var account = accounts.FirstOrDefault(a => a.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
-            if (account != null)
-            {
-                account.EncryptedSessionId = null;
-                account.EncryptedSteamLoginSecure = null;
-                accounts.Remove(account);
-                SaveAccountsToFile(accounts);
-            }
-        }
+            var accounts = LoadAccounts();
+            var account = accounts.FirstOrDefault(a => a.Username.Equals(username, StringComparison.OrdinalIgnoreCase)) ?? new SavedAccount { Username = username };
 
-        private static void SaveAccountsToFile(List<SavedAccount> accounts)
-        {
-            string json = JsonConvert.SerializeObject(accounts, Formatting.Indented);
-            string? directoryPath = Path.GetDirectoryName(FilePath);
-            if (!Directory.Exists(directoryPath))
-            {
-                if (directoryPath != null) Directory.CreateDirectory(directoryPath);
-            }
-            File.WriteAllText(FilePath, json);
-        }
+            account.EncryptedGOGAccessToken = Protect(accessToken);
+            account.EncryptedGOGRefreshToken = Protect(refreshToken);
+            account.GogUserId = gogUserId;
 
-        public static List<SavedAccount> GetSavedAccounts()
-        {
-            if (!File.Exists(FilePath))
+            if (!accounts.Any(a => a.Username.Equals(username, StringComparison.OrdinalIgnoreCase)))
             {
-                return new List<SavedAccount>();
+                accounts.Add(account);
             }
-            string json = File.ReadAllText(FilePath);
-            return JsonConvert.DeserializeObject<List<SavedAccount>>(json) ?? new List<SavedAccount>();
-        }
 
-        private static string Encrypt(string data)
-        {
-            if (string.IsNullOrEmpty(data)) return null;
-            byte[] plainBytes = Encoding.UTF8.GetBytes(data);
-            byte[] encryptedBytes = ProtectedData.Protect(plainBytes, Entropy, DataProtectionScope.CurrentUser);
-            return Convert.ToBase64String(encryptedBytes);
-        }
-
-        private static string? Decrypt(string encryptedData)
-        {
-            if (string.IsNullOrEmpty(encryptedData)) return null;
-            try
-            {
-                byte[] encryptedBytes = Convert.FromBase64String(encryptedData);
-                byte[] plainBytes = ProtectedData.Unprotect(encryptedBytes, Entropy, DataProtectionScope.CurrentUser);
-                return Encoding.UTF8.GetString(plainBytes);
-            }
-            catch
-            {
-                return null;
-            }
+            SaveAccounts(accounts);
         }
 
         public static void DeleteAccount(string username)
         {
-            var accounts = GetSavedAccounts();
-            var account = accounts.FirstOrDefault(a => a.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
-            if (account != null)
+            var accounts = LoadAccounts();
+            var accountToRemove = accounts.FirstOrDefault(a => a.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
+            if (accountToRemove != null)
             {
-                accounts.Remove(account);
-                SaveAccountsToFile(accounts);
+                accounts.Remove(accountToRemove);
+                SaveAccounts(accounts);
             }
+        }
+
+        public static List<SerializableCookie> GetSteamSession(string username)
+        {
+            var account = GetSavedAccount(username);
+            if (account != null && !string.IsNullOrEmpty(account.EncryptedSteamCookies))
+            {
+                string cookiesJson = Unprotect(account.EncryptedSteamCookies);
+                return JsonConvert.DeserializeObject<List<SerializableCookie>>(cookiesJson) ?? new List<SerializableCookie>();
+            }
+            return new List<SerializableCookie>();
+        }
+
+        public static (string AccessToken, string RefreshToken, string GogUserId) GetGOGTokens(string username)
+        {
+            var account = GetSavedAccount(username);
+            if (account != null && !string.IsNullOrEmpty(account.EncryptedGOGAccessToken))
+            {
+                return (Unprotect(account.EncryptedGOGAccessToken), Unprotect(account.EncryptedGOGRefreshToken), account.GogUserId);
+            }
+            return (string.Empty, string.Empty, string.Empty);
+        }
+
+        public static List<SavedAccount> GetSavedAccounts() => LoadAccounts();
+
+        private static SavedAccount GetSavedAccount(string username) => LoadAccounts().FirstOrDefault(a => a.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
+
+        private static List<SavedAccount> LoadAccounts()
+        {
+            if (!File.Exists(AccountsFilePath)) return new List<SavedAccount>();
+
+            try
+            {
+                var json = File.ReadAllText(AccountsFilePath);
+                return JsonConvert.DeserializeObject<List<SavedAccount>>(json) ?? new List<SavedAccount>();
+            }
+            catch
+            {
+                return new List<SavedAccount>();
+            }
+        }
+
+        private static void SaveAccounts(List<SavedAccount> accounts)
+        {
+            var json = JsonConvert.SerializeObject(accounts, Formatting.Indented);
+            File.WriteAllText(AccountsFilePath, json);
+        }
+
+        private static string Protect(string data)
+        {
+            if (string.IsNullOrEmpty(data)) return string.Empty;
+            var dataBytes = Encoding.UTF8.GetBytes(data);
+            var protectedData = ProtectedData.Protect(dataBytes, Entropy, DataProtectionScope.CurrentUser);
+            return Convert.ToBase64String(protectedData);
+        }
+
+        private static string Unprotect(string data)
+        {
+            if (string.IsNullOrEmpty(data)) return string.Empty;
+            var protectedData = Convert.FromBase64String(data);
+            var dataBytes = ProtectedData.Unprotect(protectedData, Entropy, DataProtectionScope.CurrentUser);
+            return Encoding.UTF8.GetString(dataBytes);
         }
     }
 }

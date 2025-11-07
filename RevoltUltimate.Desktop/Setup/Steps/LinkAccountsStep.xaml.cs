@@ -1,4 +1,6 @@
-using RevoltUltimate.Desktop.Setup.Steam;
+using RevoltUltimate.API.Accounts;
+using RevoltUltimate.API.Searcher;
+using RevoltUltimate.Desktop.Setup.Login;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -15,7 +17,7 @@ namespace RevoltUltimate.Desktop.Setup.Steps
         private readonly Dictionary<string, List<string>> platformOptions = new()
         {
             { "Steam", new List<string> { "Login with Steam on Web", "Login with Steam API" } },
-            { "Xbox", new List<string> { "Login with Xbox on Web", "Link Xbox Gamertag" } },
+            { "GOG", new List<string> { "Login with GOG" } },
         };
 
         public ApplicationSettings Settings { get; set; }
@@ -27,6 +29,7 @@ namespace RevoltUltimate.Desktop.Setup.Steps
             add { AddHandler(GoToNextStepEvent, value); }
             remove { RemoveHandler(GoToNextStepEvent, value); }
         }
+
         public LinkAccountsStep()
         {
             InitializeComponent();
@@ -43,7 +46,10 @@ namespace RevoltUltimate.Desktop.Setup.Steps
                     Child = new StackPanel()
                 }
             };
-            Application.Current.MainWindow.MouseDown += MainWindow_MouseDown;
+            if (Application.Current.MainWindow != null)
+            {
+                Application.Current.MainWindow.MouseDown += MainWindow_MouseDown;
+            }
         }
 
         private void MainWindow_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -73,6 +79,11 @@ namespace RevoltUltimate.Desktop.Setup.Steps
 
                 if (platformName != null && platformOptions.ContainsKey(platformName))
                 {
+                    if (dropdownMenu.IsOpen)
+                    {
+                        dropdownMenu.IsOpen = false;
+                    }
+
                     var menu = dropdownMenu.Child as Border;
                     var stackPanel = menu?.Child as StackPanel;
                     stackPanel?.Children.Clear();
@@ -98,41 +109,33 @@ namespace RevoltUltimate.Desktop.Setup.Steps
             }
         }
 
-        private void Option_Checked(object sender, RoutedEventArgs e, string platformName)
+        private async void Option_Checked(object sender, RoutedEventArgs e, string platformName)
         {
             if (sender is not CheckBox checkBox) return;
 
             var optionContent = checkBox.Content.ToString();
-            dropdownMenu.IsOpen = false; // Close dropdown menu after selection
+            dropdownMenu.IsOpen = false;
 
             switch (optionContent)
             {
-                case "Login with Steam on Web":
-                    var steamLoginWindow = new SteamWebLoginWindow()
-                    {
-                        Owner = Application.Current.MainWindow
-                    };
-                    steamLoginWindow.Show();
-                    break;
-
                 case "Login with Steam API":
                     var fields = new List<InputFieldDefinition>
-            {
-                new InputFieldDefinition
-                {
-                    Label = "Steam API Key",
-                    DefaultValue = Settings.SteamApiKey,
-                    Validator = value => !string.IsNullOrWhiteSpace(value),
-                    ValidationErrorMessage = "Steam API Key is required."
-                },
-                new InputFieldDefinition
-                {
-                    Label = "Steam ID",
-                    DefaultValue = Settings.SteamId,
-                    Validator = value => !string.IsNullOrWhiteSpace(value),
-                    ValidationErrorMessage = "Steam ID is required."
-                }
-            };
+                    {
+                        new InputFieldDefinition
+                        {
+                            Label = "Steam API Key",
+                            DefaultValue = Settings.SteamApiKey,
+                            Validator = value => !string.IsNullOrWhiteSpace(value),
+                            ValidationErrorMessage = "Steam API Key is required."
+                        },
+                        new InputFieldDefinition
+                        {
+                            Label = "Steam ID",
+                            DefaultValue = Settings.SteamId,
+                            Validator = value => !string.IsNullOrWhiteSpace(value),
+                            ValidationErrorMessage = "Steam ID is required."
+                        }
+                    };
 
                     var inputDialog = new InputDialog("Please enter your Steam API Key and Steam ID:", fields, "https://github.com")
                     {
@@ -154,15 +157,66 @@ namespace RevoltUltimate.Desktop.Setup.Steps
                         }
                     }
                     break;
+                case "Login with Steam on Web":
+                    var steamLoginWindow = new SteamWebLoginWindow()
+                    {
+                        Owner = Application.Current.MainWindow
+                    };
+                    steamLoginWindow.Show();
+                    break;
+
+                case "Login with GOG":
+                    var gogLoginWindow = new GOGWebLoginWindow { Owner = Application.Current.MainWindow };
+                    if (gogLoginWindow.ShowDialog() == true && !string.IsNullOrEmpty(gogLoginWindow.AuthCode))
+                    {
+                        try
+                        {
+                            var tokenResponse = await GOG.Instance.ExchangeAuthCodeForTokensAsync(gogLoginWindow.AuthCode);
+                            GOG.Instance.SetSession(tokenResponse.AccessToken, tokenResponse.RefreshToken, tokenResponse.UserId);
+                            var userData = await GOG.Instance.GetUserDataAsync();
+
+                            if (userData != null && !string.IsNullOrEmpty(userData.Username))
+                            {
+                                AccountManager.SaveGOGTokens(userData.Username, tokenResponse.AccessToken, tokenResponse.RefreshToken, tokenResponse.UserId);
+                                MessageBox.Show($"GOG account for {userData.Username} linked successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                                UpdateCheckmark(platformName);
+                            }
+                            else
+                            {
+                                throw new Exception("Failed to retrieve GOG user data.");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"Failed to link GOG account: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                            checkBox.IsChecked = false;
+                        }
+                    }
+                    else
+                    {
+                        checkBox.IsChecked = false;
+                    }
+                    return;
             }
 
-            if (activeLogoBox != null)
+            UpdateCheckmark(platformName);
+        }
+
+        private void UpdateCheckmark(string platformName)
+        {
+            Path? checkmark = null;
+            switch (platformName)
             {
-                var checkmark = activeLogoBox.FindName("Checkmark") as Path;
-                if (checkmark != null)
-                {
-                    checkmark.Visibility = Visibility.Visible;
-                }
+                case "Steam":
+                    checkmark = FindName("Checksteam") as Path;
+                    break;
+                case "GOG":
+                    checkmark = FindName("Checkgog") as Path;
+                    break;
+            }
+            if (checkmark != null)
+            {
+                checkmark.Visibility = Visibility.Visible;
             }
         }
 
