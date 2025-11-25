@@ -7,6 +7,7 @@ using RevoltUltimate.API.Objects;
 using RevoltUltimate.API.Searcher;
 using RevoltUltimate.Desktop.Pages;
 using RevoltUltimate.Desktop.Windows;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -30,7 +31,7 @@ namespace RevoltUltimate.Desktop
         private bool _isExplicitlyClosing = false;
         private DispatcherTimer _backgroundTaskTimer;
         private bool _isBackgroundTaskRunning = false;
-        private UniformGrid _gamesGrid = new UniformGrid { Columns = 5, Margin = new Thickness(15) };
+        private UniformGrid _gamesGrid = new() { Columns = 5, Margin = new Thickness(15) };
 
 
         public NotificationViewModel NotificationViewModel { get; private set; }
@@ -47,7 +48,7 @@ namespace RevoltUltimate.Desktop
             NotificationSystem.DataContext = NotificationViewModel;
             UpdateXpBar();
             UpdateLevelAndTooltipText();
-            _ = AddGamesToGrid(false, true);
+            AddGamesToGrid(true);
 
             InitializeTaskbarIcon();
             InitializeBackgroundTask();
@@ -66,7 +67,7 @@ namespace RevoltUltimate.Desktop
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error loading icon for TaskbarIcon: {ex.Message}");
+                Trace.WriteLine($"Error loading icon for TaskbarIcon: {ex.Message}");
             }
 
             var contextMenu = new ContextMenu();
@@ -119,10 +120,12 @@ namespace RevoltUltimate.Desktop
         }
         private void Console_Click(object sender, RoutedEventArgs e)
         {
-            if (_consoleWindow == null || !_consoleWindow.IsLoaded)
+            if (!_consoleWindow.IsLoaded)
             {
-                _consoleWindow = new ConsoleWindow();
-                _consoleWindow.Owner = this;
+                _consoleWindow = new ConsoleWindow
+                {
+                    Owner = this
+                };
                 _consoleWindow.Show();
             }
             else
@@ -151,13 +154,15 @@ namespace RevoltUltimate.Desktop
             _backgroundTaskTimer?.Stop();
             _taskbarIcon?.Dispose();
             _taskbarIcon = null;
-            System.Windows.Application.Current.Shutdown();
+            Application.Current.Shutdown();
         }
 
         private void InitializeBackgroundTask()
         {
-            _backgroundTaskTimer = new DispatcherTimer();
-            _backgroundTaskTimer.Interval = TimeSpan.FromSeconds(30);
+            _backgroundTaskTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(30)
+            };
             _backgroundTaskTimer.Tick += BackgroundTask_Tick;
             _backgroundTaskTimer.Start();
         }
@@ -171,19 +176,18 @@ namespace RevoltUltimate.Desktop
         {
             if (_isBackgroundTaskRunning)
             {
-                System.Diagnostics.Debug.WriteLine("Background task is already running. Skipping new invocation.");
+                Trace.WriteLine("Background task is already running. Skipping new invocation.");
                 return;
             }
 
             _isBackgroundTaskRunning = true;
-            System.Diagnostics.Debug.WriteLine($"Background task running at: {DateTime.Now}");
+            Trace.WriteLine($"Background task running at: {DateTime.Now}");
             string taskName = "Checking for new achievements";
             NotificationViewModel.AddTask(taskName);
             var savedAccount = AccountManager.GetSavedAccounts().FirstOrDefault();
 
             try
             {
-                // --- OPTIMIZATION: Run Steam and GOG fetching in parallel ---
                 var steamTask = Task.Run(async () =>
                 {
                     var games = new List<Game>();
@@ -235,6 +239,7 @@ namespace RevoltUltimate.Desktop
                                     Dispatcher.Invoke(() =>
                                     {
                                         AchievementWindow.ShowNotification(localAch, App.Settings?.CustomAnimationDllPath);
+                                        AddXp(localAch.xp);
                                     });
                                     foundAny = true;
                                 }
@@ -251,7 +256,7 @@ namespace RevoltUltimate.Desktop
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error checking for achievements: {ex.Message}");
+                Trace.WriteLine($"Error checking for achievements: {ex.Message}");
                 NotificationViewModel.UpdateTaskStatus(taskName, NotificationStatus.Failed, ex.Message);
             }
             finally
@@ -284,10 +289,49 @@ namespace RevoltUltimate.Desktop
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error saving data: {ex.Message}");
+                Trace.WriteLine($"Error saving data: {ex.Message}");
             }
         }
 
+        public void AddXp(int amount)
+        {
+            if (amount <= 0)
+                return;
+
+            int prevXp = CurrentUser.GetXpForCurrentLevel();
+            int prevMaxXp = CurrentUser.GetXpForNextLevel();
+
+            CurrentUser.Xp += amount;
+            Save();
+
+            int newXp = CurrentUser.GetXpForCurrentLevel();
+            int newMaxXp = CurrentUser.GetXpForNextLevel();
+
+            void UpdateUi()
+            {
+                if (newXp < prevXp)
+                {
+                    AnimateXpBar(prevXp, prevMaxXp, () =>
+                    {
+                        XpProgressBar.Maximum = newMaxXp;
+                        XpProgressBar.Value = 0;
+                        AnimateXpBar(0, newXp);
+                        UpdateLevelAndTooltipText();
+                    });
+                }
+                else
+                {
+                    XpProgressBar.Maximum = newMaxXp;
+                    AnimateXpBar(prevXp, newXp);
+                    UpdateLevelAndTooltipText();
+                }
+            }
+
+            if (!Dispatcher.CheckAccess())
+                Dispatcher.Invoke(UpdateUi);
+            else
+                UpdateUi();
+        }
         private void UpdateXpBar()
         {
             int currentXp = CurrentUser.GetXpForCurrentLevel();
@@ -300,32 +344,6 @@ namespace RevoltUltimate.Desktop
         {
             LevelTextBlock.Text = CurrentUser.GetLevel().ToString();
             XpBarGrid.ToolTip = $"XP: {CurrentUser.GetXpForCurrentLevel()}/{CurrentUser.GetXpForNextLevel()}";
-        }
-        private void AddXpButton_Click(object sender, RoutedEventArgs e)
-        {
-            int prevXp = CurrentUser.GetXpForCurrentLevel();
-            int prevMaxXp = CurrentUser.GetXpForNextLevel();
-            CurrentUser.Xp += 10;
-            Save();
-            int newXp = CurrentUser.GetXpForCurrentLevel();
-            int newMaxXp = CurrentUser.GetXpForNextLevel();
-
-            if (newXp < prevXp)
-            {
-                AnimateXpBar(prevXp, prevMaxXp, () =>
-                {
-                    XpProgressBar.Maximum = newMaxXp;
-                    XpProgressBar.Value = 0;
-                    AnimateXpBar(0, newXp);
-                    UpdateLevelAndTooltipText();
-                });
-            }
-            else
-            {
-                XpProgressBar.Maximum = newMaxXp;
-                AnimateXpBar(prevXp, newXp);
-                UpdateLevelAndTooltipText();
-            }
         }
 
         private void AnimateXpBar(double fromValue, double toValue, Action? completed = null, double durationSeconds = 0.7)
@@ -398,7 +416,7 @@ namespace RevoltUltimate.Desktop
             searchWindow.ShowDialog();
         }
 
-        private async Task AddGamesToGrid(bool back, bool load)
+        private async Task AddGamesToGrid(bool load)
         {
             MainContentControl.Content = new ScrollViewer
             {
@@ -408,7 +426,7 @@ namespace RevoltUltimate.Desktop
             };
 
             _gamesGrid.Children.Clear();
-            AddSelectGamesToGrid(CurrentUser.Games);
+            AddSelectGamesToGrid(CurrentUser.Games, false);
 
             if (load)
             {
@@ -448,7 +466,7 @@ namespace RevoltUltimate.Desktop
 
                 if (newGamesFound.Any())
                 {
-                    AddSelectGamesToGrid(newGamesFound);
+                    AddSelectGamesToGrid(newGamesFound, true);
                 }
             }
 
@@ -467,15 +485,15 @@ namespace RevoltUltimate.Desktop
             }
 
             _gamesGrid.Children.Clear();
-            AddSelectGamesToGrid(CurrentUser.Games);
+            AddSelectGamesToGrid(CurrentUser.Games, true);
             Save();
         }
 
-        private void AddSelectGamesToGrid(IEnumerable<Game> games)
+        private void AddSelectGamesToGrid(IEnumerable<Game> games, bool achievementXP)
         {
             if (!games.Any())
             {
-                System.Diagnostics.Debug.WriteLine("No games to add to the grid.");
+                Trace.WriteLine("No games to add to the grid.");
                 Save();
                 return;
             }
@@ -490,6 +508,17 @@ namespace RevoltUltimate.Desktop
                 var gameShowControl = new GameShow(game);
                 gameShowControl.GameClicked += OnGameClicked;
                 _gamesGrid.Children.Add(gameShowControl);
+                if (achievementXP)
+                {
+                    //Add XP for every achievement that is already unlocked based on the achievement's xp
+                    foreach (var achievement in game.achievements)
+                    {
+                        if (achievement.unlocked)
+                        {
+                            AddXp(achievement.xp);
+                        }
+                    }
+                }
             }
             Save();
         }
@@ -530,12 +559,12 @@ namespace RevoltUltimate.Desktop
 
         private void OnBackClicked(object sender, System.EventArgs e)
         {
-            AddGamesToGrid(true, false);
+            AddGamesToGrid(false);
         }
 
         private void ReloadOnClick(object sender, RoutedEventArgs e)
         {
-            AddGamesToGrid(false, false);
+            AddGamesToGrid(false);
         }
     }
 }

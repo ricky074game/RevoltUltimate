@@ -41,7 +41,6 @@ namespace RevoltUltimate.Desktop.Setup.Login
                         Path = c.Path
                     }).ToList();
                     await StoreAccountSessionAsync(serializableCookies);
-                    DialogResult = true;
                     Close();
                 }
             }

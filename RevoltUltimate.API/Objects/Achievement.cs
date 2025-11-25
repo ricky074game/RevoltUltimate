@@ -53,11 +53,11 @@ namespace RevoltUltimate.API.Objects
             set { _datetimeunlocked = value; OnPropertyChanged(); }
         }
 
-        private int _difficulty;
-        public int difficulty
+        private int _xp;
+        public int xp
         {
-            get => _difficulty;
-            set { _difficulty = value; OnPropertyChanged(); }
+            get => _xp;
+            set { _xp = value; OnPropertyChanged(); }
         }
 
         private string _apiName;
@@ -101,6 +101,7 @@ namespace RevoltUltimate.API.Objects
             datetimeunlocked = dateTime;
         }
 
+
         [JsonConstructor]
         public Achievement(string Name, string Description, string ImageUrl, bool Hidden, int Id, bool Unlocked,
             string? DateTimeUnlocked, int Difficulty, string apiName, bool progress, int currentProgress, int maxProgress, float getglobalpercentage)
@@ -112,12 +113,24 @@ namespace RevoltUltimate.API.Objects
             _id = Id;
             _unlocked = Unlocked;
             _datetimeunlocked = DateTimeUnlocked;
-            _difficulty = Difficulty;
+            _xp = Difficulty == 0 ? CalculateDifficulty(getglobalpercentage) : Difficulty;
             _apiName = apiName;
             _progress = progress;
             _currentProgress = currentProgress;
             _maxProgress = maxProgress;
             _getglobalpercentage = getglobalpercentage;
+        }
+
+        private static int CalculateDifficulty(float globalPercentage)
+        {
+            return globalPercentage switch
+            {
+                > 90 => 10, // Very Easy (10 XP)
+                > 60 => 30, // Easy (30 XP)
+                > 40 => 50, // Medium (50 XP)
+                > 10 => 90, // Hard (90 XP)
+                _ => 200 // Legendary (200 XP)
+            };
         }
     }
 }

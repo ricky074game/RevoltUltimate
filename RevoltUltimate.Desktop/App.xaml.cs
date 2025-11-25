@@ -368,7 +368,7 @@ namespace RevoltUltimate.Desktop
             };
             _sessionRefreshTimer.Tick += async (s, e) =>
             {
-                Debug.WriteLine("Timer Ticked: Attempting to refresh Steam session.");
+                Trace.WriteLine("Timer Ticked: Attempting to refresh Steam session.");
                 await SteamScrape.Instance.TryRefreshSessionAsync();
             };
             _sessionRefreshTimer.Start();
@@ -386,7 +386,7 @@ namespace RevoltUltimate.Desktop
 
                     if (Settings != null && Settings.Version == CurrentSettingsVersion)
                     {
-                        Debug.WriteLine("Settings loaded successfully.");
+                        Trace.WriteLine("Settings loaded successfully.");
                     }
                     else if (Settings != null && Settings.Version != CurrentSettingsVersion)
                     {
@@ -397,7 +397,7 @@ namespace RevoltUltimate.Desktop
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Error loading settings: {ex.Message}");
+                    Trace.WriteLine($"Error loading settings: {ex.Message}");
                     MessageBox.Show($"An unexpected error occurred while loading settings: {ex.Message}. Resetting to default settings.",
                         "Settings Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     ResetToDefaultSettings();
@@ -405,7 +405,7 @@ namespace RevoltUltimate.Desktop
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine("Settings file not found. Resetting to default settings.");
+                Trace.WriteLine("Settings file not found. Resetting to default settings.");
                 ResetToDefaultSettings();
             }
         }
@@ -453,12 +453,12 @@ namespace RevoltUltimate.Desktop
                 {
                     string json = JsonConvert.SerializeObject(Settings, Formatting.Indented);
                     File.WriteAllText(SettingsFilePath, json);
-                    Debug.WriteLine("Settings saved successfully.");
+                    Trace.WriteLine("Settings saved successfully.");
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error saving settings: {ex.Message}");
+                Trace.WriteLine($"Error saving settings: {ex.Message}");
                 MessageBox.Show($"Failed to save settings: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -531,7 +531,7 @@ namespace RevoltUltimate.Desktop
             var savedAccount = AccountManager.GetSavedAccounts().FirstOrDefault();
             if (savedAccount == null || CurrentUser == null)
             {
-                Debug.WriteLine("No saved accounts or current user found. Skipping linker setup.");
+                Trace.WriteLine("No saved accounts or current user found. Skipping linker setup.");
                 return;
             }
 
@@ -543,12 +543,12 @@ namespace RevoltUltimate.Desktop
                 bool sessionIsValid = await SteamScrape.Instance.TryRefreshSessionAsync();
                 if (sessionIsValid)
                 {
-                    Debug.WriteLine($"Successfully authenticated with Steam as {savedAccount.Username}.");
+                    Trace.WriteLine($"Successfully authenticated with Steam as {savedAccount.Username}.");
                     SetupSessionRefreshTimer();
                 }
                 else
                 {
-                    Debug.WriteLine("Steam session has expired.");
+                    Trace.WriteLine("Steam session has expired.");
                 }
             }
 
@@ -557,7 +557,7 @@ namespace RevoltUltimate.Desktop
             if (!string.IsNullOrEmpty(gogTokens.AccessToken))
             {
                 GOG.Instance.SetSession(gogTokens.AccessToken, gogTokens.RefreshToken, gogTokens.GogUserId);
-                Debug.WriteLine("Logged into GOG");
+                Trace.WriteLine("Logged into GOG");
             }
         }
         private async Task InitializeCometConnection()
@@ -598,6 +598,7 @@ namespace RevoltUltimate.Desktop
                             Trace.WriteLine("ACHIEVEMENT FOUND");
                             AchievementWindow.ShowNotification(newAchievement, Settings.CustomAnimationDllPath);
                             changed = true;
+                            mainWindow.AddXp(newAchievement.xp);
                         }
                     }
                 }
@@ -623,24 +624,24 @@ namespace RevoltUltimate.Desktop
 
                     if (CurrentUser != null)
                     {
-                        System.Diagnostics.Debug.WriteLine($"User data loaded successfully for user: {CurrentUser.UserName}.");
+                        Trace.WriteLine($"User data loaded successfully for user: {CurrentUser.UserName}.");
                     }
                     else
                     {
-                        System.Diagnostics.Debug.WriteLine("User data file exists but could not be deserialized. Resetting CurrentUser to null.");
+                        Trace.WriteLine("User data file exists but could not be deserialized. Resetting CurrentUser to null.");
                         CurrentUser = null;
                     }
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Error loading user data: {ex.Message}");
+                    Trace.WriteLine($"Error loading user data: {ex.Message}");
                     MessageBox.Show($"Error loading user data: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     CurrentUser = null;
                 }
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine("User data file not found. Resetting CurrentUser to null.");
+                Trace.WriteLine("User data file not found. Resetting CurrentUser to null.");
                 CurrentUser = null;
             }
         }

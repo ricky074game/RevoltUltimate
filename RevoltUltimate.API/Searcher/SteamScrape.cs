@@ -170,56 +170,79 @@ namespace RevoltUltimate.API.Searcher
             try
             {
                 var response = await _httpClient.GetStringAsync(url);
-                var doc = new HtmlDocument();
-                doc.LoadHtml(response);
 
-                var gamesListNode = doc.DocumentNode.SelectSingleNode("//template[@id='gameslist_config']");
-                var jsonData = gamesListNode?.GetAttributeValue("data-profile-gameslist", null);
-
-                if (!string.IsNullOrEmpty(jsonData))
+                string searchMarker = "window.SSR.renderContext=JSON.parse(\"";
+                int startIndex = response.IndexOf(searchMarker);
+                if (startIndex != -1)
                 {
-                    var decodedJsonData = WebUtility.HtmlDecode(jsonData);
-                    var gamesListJson = JObject.Parse(decodedJsonData);
-                    var ownedGames = gamesListJson["rgGames"];
-
-                    if (ownedGames is JArray gamesArray)
+                    startIndex += searchMarker.Length;
+                    int endIndex = response.IndexOf("\");", startIndex);
+                    if (endIndex != -1)
                     {
-                        foreach (var gameToken in gamesArray)
+                        var jsonString = response.Substring(startIndex, endIndex - startIndex);
+                        jsonString = Regex.Unescape(jsonString);
+                        var renderContext = JObject.Parse(jsonString);
+                        var queryDataString = renderContext["queryData"]?.ToString();
+                        if (!string.IsNullOrEmpty(queryDataString))
                         {
-                            var name = gameToken["name"]?.ToString();
-                            var appId = gameToken["appid"]?.ToString();
-                            var iconHash = gameToken["img_icon_url"]?.ToString();
-                            var logoUrl = !string.IsNullOrEmpty(appId) && !string.IsNullOrEmpty(iconHash)
-                                ? $"https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps/{appId}/{iconHash}.jpg"
-                                : null;
+                            var queryDataObject = JObject.Parse(queryDataString);
+                            var queries = queryDataObject["queries"];
 
-                            if (!string.IsNullOrEmpty(name))
+                            if (queries is JArray queriesArray)
                             {
-                                var game = new Game(name, "Steam", logoUrl, $"Steam App {appId}", "Steam Local", int.Parse(appId));
-                                games.Add(game);
+                                var ownedGamesQuery = queriesArray.FirstOrDefault(q =>
+                                    q["queryKey"] is JArray key &&
+                                    key.Count > 0 &&
+                                    key[0].ToString() == "OwnedGames");
+
+                                if (ownedGamesQuery != null)
+                                {
+                                    var gamesList = ownedGamesQuery["state"]?["data"];
+                                    if (gamesList is JArray gamesArray)
+                                    {
+                                        foreach (var gameToken in gamesArray)
+                                        {
+                                            var name = gameToken["name"]?.ToString();
+                                            var appId = gameToken["appid"]?.ToString();
+                                            var iconHash = gameToken["img_icon_url"]?.ToString();
+
+                                            var logoUrl = !string.IsNullOrEmpty(appId) && !string.IsNullOrEmpty(iconHash)
+                                                ? $"https://media.steampowered.com/steamcommunity/public/images/apps/{appId}/{iconHash}.jpg"
+                                                : null;
+
+                                            if (!string.IsNullOrEmpty(name) && int.TryParse(appId, out int appIdInt))
+                                            {
+                                                var game = new Game(name, "Steam", logoUrl, $"Steam App {appId}", "Steam Local", appIdInt);
+                                                games.Add(game);
+                                            }
+                                        }
+                                        Trace.WriteLine($"SteamScrape: Successfully parsed {games.Count} games from SSR data.");
+                                    }
+                                }
                             }
                         }
-                        Trace.WriteLine($"SteamScrape: Successfully parsed {games.Count} games from profile page.");
-                    }
-                    else
-                    {
-                        Trace.WriteLine("SteamScrape: 'rgGames' JSON array not found or is not an array.");
                     }
                 }
                 else
                 {
-                    Trace.WriteLine("SteamScrape: Could not find gameslist_config JSON on the games page.");
+                    Trace.WriteLine("SteamScrape: Could not find window.SSR.renderContext in page source.");
                 }
             }
             catch (Exception ex)
             {
                 Trace.WriteLine($"SteamScrape: Error fetching or parsing owned games: {ex.Message}");
             }
+
             foreach (var game in games)
             {
-                var achievements = await GetPlayerAchievementsAsync(uint.Parse(Regex.Match(game.description, @"\d+").Value));
-                game.AddAchievements(achievements);
+                var match = Regex.Match(game.description, @"\d+");
+                if (match.Success)
+                {
+                    var achievements = await GetPlayerAchievementsAsync(uint.Parse(match.Value));
+                    game.AddAchievements(achievements);
+                }
             }
+
             return games;
         }
 
@@ -277,7 +300,6 @@ namespace RevoltUltimate.API.Searcher
                         }
                     }
 
-                    // Scrape global percentage
                     var globalPercentageNode = node.SelectSingleNode(".//div[contains(@class, 'achievePercent')]");
                     float globalPercentage = 0;
                     if (globalPercentageNode != null)
@@ -297,7 +319,7 @@ namespace RevoltUltimate.API.Searcher
                             Id: id++,
                             Unlocked: unlocked,
                             DateTimeUnlocked: unlockedTime,
-                            Difficulty: 1,
+                            Difficulty: 0,
                             apiName: "",
                             progress: hasProgress,
                             currentProgress: currentProgress,

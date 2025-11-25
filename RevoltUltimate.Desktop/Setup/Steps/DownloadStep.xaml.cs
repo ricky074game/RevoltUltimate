@@ -1,4 +1,5 @@
-﻿using RevoltUltimate.API.Update;
+﻿using System.Diagnostics;
+using RevoltUltimate.API.Update;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -19,7 +20,7 @@ namespace RevoltUltimate.Desktop.Setup.Steps
         {
             if ((bool)e.NewValue && !_isDownloadStarted)
             {
-                System.Diagnostics.Debug.WriteLine("STARTING DOWNLOAD");
+                Trace.WriteLine("STARTING DOWNLOAD");
                 _isDownloadStarted = true;
                 await StartDownload();
             }

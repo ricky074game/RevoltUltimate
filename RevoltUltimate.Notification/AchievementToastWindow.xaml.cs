@@ -29,10 +29,10 @@ namespace RevoltUltimate.Notification
         private AchievementToastWindow(Achievement achievement) : this()
         {
             _currentAchievement = achievement;
-            AchievementScoreRun.Text = $"{achievement.difficulty}G";
+            AchievementScoreRun.Text = $"{achievement.xp}G";
             AchievementNameRun.Text = $" - {achievement.name}";
-            this.DataContext = achievement;
-            this.Closed += OnDisplayedToastClosed;
+            DataContext = achievement;
+            Closed += OnDisplayedToastClosed;
         }
 
         public void ShowAchievement(Achievement achievement)

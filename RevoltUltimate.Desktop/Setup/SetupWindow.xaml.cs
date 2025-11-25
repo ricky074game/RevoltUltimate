@@ -182,8 +182,10 @@ namespace RevoltUltimate.Desktop.Setup
 
             setupCompleteEvent?.Set();
 
-            var timer = new System.Windows.Threading.DispatcherTimer();
-            timer.Interval = TimeSpan.FromSeconds(3);
+            var timer = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(3)
+            };
             timer.Tick += (s, args) =>
             {
                 timer.Stop();

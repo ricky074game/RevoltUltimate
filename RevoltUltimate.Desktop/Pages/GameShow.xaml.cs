@@ -3,6 +3,7 @@ using RevoltUltimate.API.Fetcher;
 using RevoltUltimate.API.Objects;
 using RevoltUltimate.Desktop.Setup;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
@@ -75,7 +76,7 @@ namespace RevoltUltimate.Desktop.Pages
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Error loading image: {ex.Message}");
+                    Trace.WriteLine($"Error loading image: {ex.Message}");
                     GameImage.Source = null;
                 }
             }
@@ -132,8 +133,10 @@ namespace RevoltUltimate.Desktop.Pages
 
         private void InitializeSparkleAnimation()
         {
-            _sparkleStoryboard = new Storyboard();
-            _sparkleStoryboard.RepeatBehavior = RepeatBehavior.Forever;
+            _sparkleStoryboard = new Storyboard
+            {
+                RepeatBehavior = RepeatBehavior.Forever
+            };
 
             for (int i = 0; i < 10; i++)
             {

@@ -1,4 +1,5 @@
-﻿using RevoltUltimate.API.Objects;
+﻿using System.Diagnostics;
+using RevoltUltimate.API.Objects;
 using RevoltUltimate.API.Searcher;
 using System.Text.RegularExpressions;
 
@@ -22,7 +23,7 @@ namespace RevoltUltimate.API.Update
 
             if (appId == 0)
             {
-                System.Diagnostics.Debug.WriteLine($"Could not find a valid AppId for game: {game.name}");
+                Trace.WriteLine($"Could not find a valid AppId for game: {game.name}");
                 return newlyEarned;
             }
 

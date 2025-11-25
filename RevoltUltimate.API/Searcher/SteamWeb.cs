@@ -265,7 +265,7 @@ namespace RevoltUltimate.API.Searcher
                             i,
                             isUnlocked,
                             unlockTimestamp,
-                            1,
+                            0,
                             schemaAch.Name,
                             hasProgress,
                             currentProgress,

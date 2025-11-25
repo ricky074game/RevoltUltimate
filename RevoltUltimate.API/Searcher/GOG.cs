@@ -401,7 +401,7 @@ namespace RevoltUltimate.API.Searcher
                             Id: id,
                             Unlocked: item.DateUnlocked.HasValue,
                             DateTimeUnlocked: item.DateUnlocked?.ToString("o"),
-                            Difficulty: 1,
+                            Difficulty: 0,
                             apiName: item.AchievementKey,
                             progress: false,
                             currentProgress: 0,
