@@ -34,7 +34,7 @@ Welcome to Revolt Ultimate! This is a modern .NET program to track achievements,
 - [ ] RetroAchievements
 ## Installation
 
-There will be a website later to install this propertly, but for now, go to the releases tab and extract the latest release.
+There will be a website later to install this propertly, but for now, go to the releases tab and use the setup utility to install it.
     
 
 
