@@ -61,7 +61,6 @@ namespace RevoltUltimate.API.Comet
                 _cometProcess.BeginErrorReadLine();
 
                 _jobManager = new JobManager();
-                _jobManager.AddProcess(Process.GetCurrentProcess());
                 _jobManager.AddProcess(_cometProcess);
 
                 CometLogReceived?.Invoke($"Started Comet process with arguments: {startInfo.Arguments}");

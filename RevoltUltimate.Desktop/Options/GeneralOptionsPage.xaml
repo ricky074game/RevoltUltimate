@@ -5,15 +5,60 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:RevoltUltimate.Desktop.Options"
              mc:Ignorable="d" 
-             d:DesignHeight="300" d:DesignWidth="600">
-    <StackPanel Margin="10">
-        <TextBlock Text="General Options" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
-        <CheckBox Content="Enable Feature X" Margin="0,5"/>
-        <CheckBox Content="Show Notifications" Margin="0,5"/>
-        <TextBlock Text="Theme:" Margin="0,10,0,5"/>
-        <ComboBox Margin="0,5">
-            <ComboBoxItem Content="Light"/>
-            <ComboBoxItem Content="Dark"/>
-        </ComboBox>
-    </StackPanel>
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+    </UserControl.Resources>
+    <Grid Margin="20">
+        <StackPanel>
+            <GroupBox Header="Startup" Foreground="White" Padding="10">
+                <StackPanel>
+                    <CheckBox x:Name="StartWithWindowsCheckBox" 
+                              Content="Start with Windows" 
+                              ToolTip="Launch the app automatically when the computer turns on."
+                              Checked="StartWithWindowsCheckBox_Changed" 
+                              Unchecked="StartWithWindowsCheckBox_Changed"/>
+                    <CheckBox x:Name="StartMinimizedCheckBox" 
+                              Content="Start Minimized" 
+                              ToolTip="Launch the app silently in the background without opening the main window."
+                              Checked="StartMinimizedCheckBox_Changed" 
+                              Unchecked="StartMinimizedCheckBox_Changed"/>
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Header="Behavior" Foreground="White" Padding="10" Margin="0,20,0,0">
+                <StackPanel>
+                    <CheckBox x:Name="MinimizeToTrayCheckBox" 
+                              Content="Minimize to Tray on Close" 
+                              ToolTip="When clicking the X button, the app goes to the system tray instead of closing completely."
+                              Checked="MinimizeToTrayCheckBox_Changed" 
+                              Unchecked="MinimizeToTrayCheckBox_Changed"/>
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Header="Performance" Foreground="White" Padding="10" Margin="0,20,0,0">
+                <StackPanel>
+                    <CheckBox x:Name="HardwareAccelerationCheckBox" 
+                              Content="Enable Hardware Acceleration" 
+                              ToolTip="Turn this off if the app feels laggy or glitches on some graphics cards. Requires restart."
+                              Checked="HardwareAccelerationCheckBox_Changed" 
+                              Unchecked="HardwareAccelerationCheckBox_Changed"/>
+                    <TextBlock x:Name="HardwareAccelerationWarning" 
+                               Text="⚠ Changes to hardware acceleration require an app restart."
+                               FontSize="11"
+                               Foreground="Orange"
+                               Margin="25,5,0,0"
+                               Visibility="Collapsed"/>
+                </StackPanel>
+            </GroupBox>
+        </StackPanel>
+    </Grid>
 </UserControl>

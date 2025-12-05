@@ -1,5 +1,6 @@
 ﻿using System.Net.Http;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace RevoltUltimate.API.Update
 {
@@ -9,45 +10,51 @@ namespace RevoltUltimate.API.Update
 
         public async Task<string> GetLatestVersionAsync(string currentVersion)
         {
-            using (HttpClient client = new HttpClient())
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("User-Agent", "RevoltUltimate");
+            client.Timeout = TimeSpan.FromSeconds(10);
+
+            var response = await client.GetAsync(GitHubApiUrl);
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
-                client.DefaultRequestHeaders.Add("User-Agent", "RevoltUltimate");
-
-                try
-                {
-                    var response = await client.GetStringAsync(GitHubApiUrl);
-                    var release = JsonSerializer.Deserialize<GitHubRelease>(response);
-
-                    if (release != null && !string.IsNullOrEmpty(release.TagName))
-                    {
-                        if (IsNewerVersion(currentVersion, release.TagName))
-                        {
-                            return $"New version available: {release.TagName}. Download at {release.HtmlUrl}";
-                        }
-                        else
-                        {
-                            return "You are using the latest version.";
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    return $"Error checking for updates: {ex.Message}";
-                }
+                return currentVersion;
             }
 
-            return "Unable to check for updates.";
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+            var release = JsonSerializer.Deserialize<GitHubRelease>(json);
+
+            if (release != null && !string.IsNullOrEmpty(release.TagName))
+            {
+                string latestVersion = release.TagName.TrimStart('v', 'V');
+                return latestVersion;
+            }
+
+            return currentVersion;
         }
 
-        private bool IsNewerVersion(string currentVersion, string latestVersion)
+        public static bool IsNewerVersion(string currentVersion, string latestVersion)
         {
+            currentVersion = currentVersion.TrimStart('v', 'V');
+            latestVersion = latestVersion.TrimStart('v', 'V');
+
+            if (Version.TryParse(currentVersion, out var current) &&
+                Version.TryParse(latestVersion, out var latest))
+            {
+                return latest > current;
+            }
+
             return string.Compare(currentVersion, latestVersion, StringComparison.OrdinalIgnoreCase) < 0;
         }
 
         private class GitHubRelease
         {
-            public string TagName { get; set; }
-            public string HtmlUrl { get; set; }
+            [JsonPropertyName("tag_name")]
+            public string? TagName { get; set; }
+
+            [JsonPropertyName("html_url")]
+            public string? HtmlUrl { get; set; }
         }
     }
 }

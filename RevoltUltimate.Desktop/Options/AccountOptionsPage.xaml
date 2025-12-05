@@ -7,44 +7,193 @@
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
     <UserControl.Resources>
-        <Style TargetType="TextBlock">
+        <DataTemplate x:Key="AccountItemTemplate">
+            <Border Background="#2D2D30" CornerRadius="5" Padding="12" Margin="0,0,0,8">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Platform Icon -->
+                    <Border Grid.Column="0" Width="40" Height="40" CornerRadius="5" 
+                            Background="{Binding PlatformColor}" Margin="0,0,12,0"
+                            VerticalAlignment="Center">
+                        <TextBlock Text="{Binding PlatformIcon}" FontSize="18" 
+                                   Foreground="White" HorizontalAlignment="Center" 
+                                   VerticalAlignment="Center" FontWeight="Bold"/>
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Username}" FontWeight="SemiBold" 
+                                   Foreground="White" FontSize="14"/>
+                        <TextBlock Text="{Binding PlatformName}" Foreground="#AAAAAA" 
+                                   FontSize="12" Margin="0,2,0,0"/>
+                    </StackPanel>
+                    <Button Grid.Column="2" Content="✕" Width="28" Height="28"
+                            Background="Transparent" Foreground="#888888" 
+                            BorderThickness="0" Cursor="Hand"
+                            VerticalAlignment="Center"
+                            ToolTip="Remove account"
+                            Tag="{Binding}"
+                            Click="RemoveAccount_Click">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}" 
+                                                    CornerRadius="14">
+                                                <ContentPresenter HorizontalAlignment="Center" 
+                                                                  VerticalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#D32F2F"/>
+                                        <Setter Property="Foreground" Value="White"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </Grid>
+            </Border>
+        </DataTemplate>
+        <Style x:Key="AddAccountMenuItem" TargetType="Button">
+            <Setter Property="Background" Value="#2D2D30"/>
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-        </Style>
-        <Style TargetType="TextBox">
-            <Setter Property="Margin" Value="10,0,0,0"/>
-            <Setter Property="Width" Value="300"/>
-        </Style>
-        <Style TargetType="Button">
-            <Setter Property="Width" Value="120"/>
-            <Setter Property="Margin" Value="10"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="15,10"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#3D3D40"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
     </UserControl.Resources>
-    <Grid Margin="20">
-        <StackPanel>
-            <GroupBox Header="Steam Web API" Foreground="White" Padding="10">
-                <StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="5">
-                        <TextBlock Text="API Key:"/>
-                        <TextBox x:Name="ApiKeyTextBox"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="5">
-                        <TextBlock Text="Steam ID:"/>
-                        <TextBox x:Name="SteamIdTextBox"/>
-                    </StackPanel>
-                    <Button Content="Save API Settings" Click="SaveApiSettings_Click"/>
-                </StackPanel>
-            </GroupBox>
 
-            <GroupBox Header="Steam Client Account" Foreground="White" Padding="10" Margin="0,20,0,0">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <TextBlock Text="Connected Accounts" FontWeight="SemiBold" FontSize="14" 
+                   Foreground="White" Grid.Row="0" Margin="0,0,0,10"/>
+
+        <Grid Grid.Row="1">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel>
-                    <TextBlock x:Name="SteamAccountStatusText" Text="No account is linked." Margin="5"/>
-                    <StackPanel Orientation="Horizontal">
-                        <Button x:Name="AddAccountButton" Content="Add Account" Click="AddAccount_Click"/>
-                        <Button x:Name="RemoveAccountButton" Content="Remove Account" Click="RemoveAccount_Click" Visibility="Collapsed"/>
-                    </StackPanel>
+                    <ItemsControl x:Name="AccountsItemsControl" 
+                                  ItemTemplate="{StaticResource AccountItemTemplate}"/>
+                    <Border x:Name="EmptyStatePanel" Background="#2D2D30" CornerRadius="5" 
+                            Padding="30" Margin="0,0,0,8" Visibility="Collapsed">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="No accounts connected" FontSize="16" 
+                                       Foreground="#888888" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Click the + button to add an account" FontSize="12" 
+                                       Foreground="#666666" HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
-            </GroupBox>
-        </StackPanel>
+            </ScrollViewer>
+            <Button x:Name="AddAccountButton" Width="50" Height="50" 
+                    HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                    Margin="0,0,10,10" Click="AddAccountButton_Click"
+                    ToolTip="Add account">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background" Value="Black"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Cursor" Value="Hand"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}" 
+                                            CornerRadius="25">
+                                        <Border.Effect>
+                                            <DropShadowEffect ShadowDepth="2" BlurRadius="8" 
+                                                              Opacity="0.4" Color="Black"/>
+                                        </Border.Effect>
+                                        <TextBlock Text="+" FontSize="28" FontWeight="Light"
+                                                   HorizontalAlignment="Center" 
+                                                   VerticalAlignment="Center"
+                                                   Margin="0,-3,0,0"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#1084D8"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#006CBD"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+            <Popup x:Name="AddAccountPopup" PlacementTarget="{Binding ElementName=AddAccountButton}"
+                   Placement="Top" StaysOpen="False" AllowsTransparency="True"
+                   PopupAnimation="Fade" HorizontalOffset="-120" VerticalOffset="-5">
+                <Border Background="#1E1E1E" CornerRadius="5" BorderBrush="#444" 
+                        BorderThickness="1" Padding="5">
+                    <Border.Effect>
+                        <DropShadowEffect ShadowDepth="3" BlurRadius="10" 
+                                          Opacity="0.5" Color="Black"/>
+                    </Border.Effect>
+                    <StackPanel Width="200">
+                        <Button Style="{StaticResource AddAccountMenuItem}" 
+                                Click="AddSteamWebAccount_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="24" Height="24" CornerRadius="4" 
+                                        Background="#1B2838" Margin="0,0,10,0">
+                                    <TextBlock Text="S" Foreground="White" FontWeight="Bold"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="Steam (Web Login)" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource AddAccountMenuItem}" 
+                                Click="AddSteamApiAccount_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="24" Height="24" CornerRadius="4" 
+                                        Background="#1B2838" Margin="0,0,10,0">
+                                    <TextBlock Text="A" Foreground="White" FontWeight="Bold"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="Steam (API Key)" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Border Height="1" Background="#444" Margin="5,5"/>
+                        <Button Style="{StaticResource AddAccountMenuItem}" 
+                                Click="AddGOGAccount_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="24" Height="24" CornerRadius="4" 
+                                        Background="#86328A" Margin="0,0,10,0">
+                                    <TextBlock Text="G" Foreground="White" FontWeight="Bold"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="GOG Galaxy" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Border>
+            </Popup>
+        </Grid>
     </Grid>
 </UserControl>

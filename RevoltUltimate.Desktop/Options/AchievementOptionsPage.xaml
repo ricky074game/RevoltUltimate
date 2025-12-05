@@ -13,7 +13,6 @@
             <RowDefinition Height="*"/>
             <!-- ListBox -->
             <RowDefinition Height="Auto"/>
-            <!-- Reload Button -->
             <RowDefinition Height="Auto"/>
             <!-- Action Buttons Panel -->
         </Grid.RowDefinitions>

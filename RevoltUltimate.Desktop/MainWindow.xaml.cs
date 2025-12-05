@@ -529,9 +529,22 @@ namespace RevoltUltimate.Desktop
 
             if (!_isExplicitlyClosing)
             {
-                e.Cancel = true;
-                this.Hide();
-                ShowInTaskbar = false;
+                // Check if MinimizeToTray is enabled
+                if (App.Settings?.MinimizeToTray == true)
+                {
+                    e.Cancel = true;
+                    this.Hide();
+                    ShowInTaskbar = false;
+                }
+                else
+                {
+                    // Close the application completely
+                    _isExplicitlyClosing = true;
+                    _backgroundTaskTimer?.Stop();
+                    _taskbarIcon?.Dispose();
+                    _taskbarIcon = null;
+                    Application.Current.Shutdown();
+                }
             }
             else
             {

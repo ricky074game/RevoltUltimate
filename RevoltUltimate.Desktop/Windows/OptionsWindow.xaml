@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:RevoltUltimate.Desktop.Pages"
         mc:Ignorable="d"
-        Title="Options" Height="450" Width="600"
+        Title="Options" Height="450" Width="799"
         WindowStartupLocation="CenterScreen"
         AllowsTransparency="True" WindowStyle="None" Background="Black" Foreground="White">
 

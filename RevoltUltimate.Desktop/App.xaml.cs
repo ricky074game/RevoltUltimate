@@ -18,6 +18,7 @@ namespace RevoltUltimate.Desktop
     public partial class App : Application
     {
         public static User? CurrentUser { get; set; }
+        public static string CurrentVersion = "v0.1";
         private static string SettingsFilePath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RevoltUltimate", "settings.json");
         public static bool IsDebugMode { get; private set; }
         private static string UserFilePath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "RevoltUltimate", "user.json");
@@ -35,6 +36,11 @@ namespace RevoltUltimate.Desktop
 
         private async void Application_Startup(object sender, StartupEventArgs e)
         {
+            bool startMinimized = false;
+            if (e.Args.Contains("--minimized") || (Settings?.StartMinimized == true))
+            {
+                startMinimized = true;
+            }
 #if DEBUG
             IsDebugMode = true;
 #endif
@@ -78,8 +84,10 @@ namespace RevoltUltimate.Desktop
             Trace.WriteLine("Application has begun startup.");
             ShutdownMode = ShutdownMode.OnMainWindowClose;
             var bootScreen = new BootScreen();
-            bootScreen.Show();
-
+            if (!startMinimized)
+            {
+                bootScreen.Show();
+            }
             try
             {
                 bootScreen.UpdateStatus("Loading user data...");
@@ -101,14 +109,9 @@ namespace RevoltUltimate.Desktop
                 bootScreen.UpdateProgress(20);
                 bootScreen.UpdateStatus("Connecting to Comet...");
                 await InitializeCometConnection();
-                bootScreen.UpdateStatus("Loading Settings...");
                 bootScreen.UpdateProgress(30);
+                bootScreen.UpdateStatus("Loading Settings...");
                 UpdateSettings();
-                if (Settings == null)
-                {
-                    MessageBox.Show("Settings file is missing or corrupted. The application will now open setup.", "Settings Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    await RunSetup(bootScreen);
-                }
                 bootScreen.UpdateProgress(50);
 
                 await SetupLinkers(bootScreen);
@@ -118,7 +121,16 @@ namespace RevoltUltimate.Desktop
                 MainWindow mainWindow = new MainWindow();
                 MainWindow = mainWindow;
                 mainWindow.Loaded += MainWindow_Loaded;
-                mainWindow.Show();
+                if (startMinimized)
+                {
+                    mainWindow.WindowState = WindowState.Minimized;
+                    mainWindow.ShowInTaskbar = false;
+                    mainWindow.Hide();
+                }
+                else
+                {
+                    mainWindow.Show();
+                }
                 bootScreen.Close();
             }
             catch (Exception ex)
@@ -302,6 +314,10 @@ namespace RevoltUltimate.Desktop
                     achievementToUnlock.SetUnlockedStatus(true, unlockedDateTime);
 
                     Trace.WriteLine($"Comet: Unlocked achievement '{achievementToUnlock.name}' for game '{_activeCometGame.name}'.");
+                    if (MainWindow is MainWindow mw)
+                    {
+                        mw.AddXp(achievementToUnlock.xp);
+                    }
 
                     Current.Dispatcher.Invoke(() =>
                     {

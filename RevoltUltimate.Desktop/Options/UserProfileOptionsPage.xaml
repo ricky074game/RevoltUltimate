@@ -5,15 +5,213 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:RevoltUltimate.Desktop.Options"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
-    <Grid>
-        <TextBlock Text="General Options" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
-        <CheckBox Content="Enable Feature X" Margin="0,5"/>
-        <CheckBox Content="Show Notifications" Margin="0,5"/>
-        <TextBlock Text="Theme:" Margin="0,10,0,5"/>
-        <ComboBox>
-            <ComboBoxItem Content="Light"/>
-            <ComboBoxItem Content="Dark"/>
-        </ComboBox>
-    </Grid>
+             d:DesignHeight="600" d:DesignWidth="800">
+    <UserControl.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Margin" Value="10,0,0,0"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Background" Value="#2D2D30"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#3F3F46"/>
+            <Setter Property="CaretBrush" Value="White"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Background" Value="#0078D4"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style x:Key="StatCard" TargetType="Border">
+            <Setter Property="Background" Value="#2D2D30"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="15"/>
+            <Setter Property="Margin" Value="5"/>
+        </Style>
+        <Style x:Key="StatValue" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#0078D4"/>
+            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="StatLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#AAAAAA"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,5,0,0"/>
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <GroupBox Grid.Row="0" Header="Profile" Foreground="White" Padding="15">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid Grid.Column="0" Margin="0,0,20,0">
+                        <Border Width="120" Height="120" CornerRadius="60" 
+                                BorderBrush="#0078D4" BorderThickness="3"
+                                Cursor="Hand" 
+                                MouseLeftButtonUp="ProfilePicture_Click"
+                                ToolTip="Click to change profile picture">
+                            <Border.Background>
+                                <ImageBrush x:Name="ProfileImageBrush" Stretch="UniformToFill"/>
+                            </Border.Background>
+                            <Border.Clip>
+                                <EllipseGeometry Center="60,60" RadiusX="60" RadiusY="60"/>
+                            </Border.Clip>
+                        </Border>
+                        <Border Width="30" Height="30" CornerRadius="15" 
+                                Background="#0078D4" 
+                                HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                Margin="0,0,5,5"
+                                Cursor="Hand"
+                                MouseLeftButtonUp="ProfilePicture_Click">
+                            <TextBlock Text="✏" FontSize="14" 
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Foreground="White"/>
+                        </Border>
+                    </Grid>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <TextBlock Text="Username:" FontWeight="SemiBold" Width="80"/>
+                            <TextBox x:Name="UsernameTextBox" Width="200" 
+                                     TextChanged="UsernameTextBox_TextChanged"/>
+                            <Button x:Name="SaveUsernameButton" Content="Save" 
+                                    Click="SaveUsername_Click" Visibility="Collapsed"
+                                    Margin="10,0,0,0"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <TextBlock Text="Level:" FontWeight="SemiBold" Width="80"/>
+                            <TextBlock x:Name="LevelText" FontSize="18" FontWeight="Bold" Foreground="#0078D4"/>
+                        </StackPanel>
+
+                        <Grid Margin="0,10,0,0" Width="300" HorizontalAlignment="Left">
+                            <ProgressBar x:Name="XpProgressBar" Height="20" 
+                                         Background="#3F3F46" Foreground="#0078D4"
+                                         BorderThickness="0"/>
+                            <TextBlock x:Name="XpText" HorizontalAlignment="Center" 
+                                       VerticalAlignment="Center" FontSize="11"/>
+                        </Grid>
+
+                        <TextBlock x:Name="TotalXpText" Margin="0,5,0,0" 
+                                   FontSize="12" Foreground="#AAAAAA"/>
+                    </StackPanel>
+                </Grid>
+            </GroupBox>
+            <GroupBox Grid.Row="1" Header="Overview" Foreground="White" Padding="10" Margin="0,20,0,0">
+                <UniformGrid Rows="1" Columns="4">
+                    <Border Style="{StaticResource StatCard}">
+                        <StackPanel>
+                            <TextBlock x:Name="TotalGamesText" Style="{StaticResource StatValue}"/>
+                            <TextBlock Text="Games" Style="{StaticResource StatLabel}"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource StatCard}">
+                        <StackPanel>
+                            <TextBlock x:Name="TotalAchievementsText" Style="{StaticResource StatValue}"/>
+                            <TextBlock Text="Achievements Unlocked" Style="{StaticResource StatLabel}"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource StatCard}">
+                        <StackPanel>
+                            <TextBlock x:Name="CompletionRateText" Style="{StaticResource StatValue}"/>
+                            <TextBlock Text="Avg. Completion" Style="{StaticResource StatLabel}"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource StatCard}">
+                        <StackPanel>
+                            <TextBlock x:Name="PerfectGamesText" Style="{StaticResource StatValue}"/>
+                            <TextBlock Text="Perfect Games" Style="{StaticResource StatLabel}"/>
+                        </StackPanel>
+                    </Border>
+                </UniformGrid>
+            </GroupBox>
+            <GroupBox Grid.Row="2" Header="Achievement Difficulty Breakdown" Foreground="White" Padding="10" Margin="0,20,0,0">
+                <UniformGrid Rows="1" Columns="5">
+                    <Border Style="{StaticResource StatCard}">
+                        <StackPanel>
+                            <TextBlock x:Name="LegendaryCount" Style="{StaticResource StatValue}" Foreground="#FFD700"/>
+                            <TextBlock Text="Legendary" Style="{StaticResource StatLabel}"/>
+                            <TextBlock Text="(200 XP)" FontSize="10" Foreground="#666666" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource StatCard}">
+                        <StackPanel>
+                            <TextBlock x:Name="HardCount" Style="{StaticResource StatValue}" Foreground="#E74C3C"/>
+                            <TextBlock Text="Hard" Style="{StaticResource StatLabel}"/>
+                            <TextBlock Text="(90 XP)" FontSize="10" Foreground="#666666" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource StatCard}">
+                        <StackPanel>
+                            <TextBlock x:Name="MediumCount" Style="{StaticResource StatValue}" Foreground="#F39C12"/>
+                            <TextBlock Text="Medium" Style="{StaticResource StatLabel}"/>
+                            <TextBlock Text="(50 XP)" FontSize="10" Foreground="#666666" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource StatCard}">
+                        <StackPanel>
+                            <TextBlock x:Name="EasyCount" Style="{StaticResource StatValue}" Foreground="#2ECC71"/>
+                            <TextBlock Text="Easy" Style="{StaticResource StatLabel}"/>
+                            <TextBlock Text="(30 XP)" FontSize="10" Foreground="#666666" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource StatCard}">
+                        <StackPanel>
+                            <TextBlock x:Name="VeryEasyCount" Style="{StaticResource StatValue}" Foreground="#3498DB"/>
+                            <TextBlock Text="Very Easy" Style="{StaticResource StatLabel}"/>
+                            <TextBlock Text="(10 XP)" FontSize="10" Foreground="#666666" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </UniformGrid>
+            </GroupBox>
+            <GroupBox Grid.Row="3" Header="Platform Statistics" Foreground="White" Padding="10" Margin="0,20,0,0">
+                <ItemsControl x:Name="PlatformStatsItemsControl">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource StatCard}" Margin="0,5">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="150"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0" Text="{Binding Platform}" 
+                                               FontWeight="SemiBold" VerticalAlignment="Center"/>
+
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="20,0">
+                                        <TextBlock Text="{Binding GameCount}" Foreground="#0078D4" FontWeight="Bold"/>
+                                        <TextBlock Text=" games, " Foreground="#AAAAAA"/>
+                                        <TextBlock Text="{Binding UnlockedAchievements}" Foreground="#2ECC71" FontWeight="Bold"/>
+                                        <TextBlock Text="/" Foreground="#AAAAAA"/>
+                                        <TextBlock Text="{Binding TotalAchievements}" Foreground="#AAAAAA"/>
+                                        <TextBlock Text=" achievements" Foreground="#AAAAAA"/>
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Column="2" Text="{Binding CompletionPercent, StringFormat={}{0}%}" 
+                                               FontWeight="Bold" Foreground="#0078D4" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </GroupBox>
+        </Grid>
+    </ScrollViewer>
 </UserControl>

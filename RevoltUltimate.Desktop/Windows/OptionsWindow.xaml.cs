@@ -23,6 +23,9 @@ namespace RevoltUltimate.Desktop.Windows
             CategoryListBox.Items.Add(new OptionsCategory { Name = "User Profile", Content = new UserProfileOptionsPage() });
             CategoryListBox.Items.Add(new OptionsCategory { Name = "Achievements", Content = new AchievementOptionsPage() });
             CategoryListBox.Items.Add(new OptionsCategory { Name = "Accounts", Content = new AccountOptionsPage() });
+            CategoryListBox.Items.Add(new OptionsCategory { Name = "Folders", Content = new FoldersOptionsPage() });
+            CategoryListBox.Items.Add(new OptionsCategory { Name = "Comet", Content = new CometOptionsPage() });
+            CategoryListBox.Items.Add(new OptionsCategory { Name = "Data", Content = new DataCacheOptionsPage() });
         }
         private void CategoryListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {

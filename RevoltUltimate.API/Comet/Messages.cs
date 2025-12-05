@@ -3,7 +3,6 @@
 namespace RevoltUltimate.API.Comet
 {
     // Incoming Messages
-
     public class CometMessage
     {
         [JsonProperty("type")]
@@ -52,7 +51,7 @@ namespace RevoltUltimate.API.Comet
         public string? Description { get; set; }
 
         [JsonProperty("unlocked_at")]
-        public object? UnlockedAt { get; set; } // Using object for null
+        public object? UnlockedAt { get; set; }
 
         [JsonProperty("image_url_unlocked")]
         public string? ImageUrlUnlocked { get; set; }

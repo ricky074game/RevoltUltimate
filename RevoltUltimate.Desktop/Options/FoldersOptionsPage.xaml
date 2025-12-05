@@ -1,0 +1,214 @@
+﻿<UserControl x:Class="RevoltUltimate.Desktop.Options.FoldersOptionsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:RevoltUltimate.Desktop.Options"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <!-- Folder Exists Converter -->
+        <local:FolderExistsConverter x:Key="FolderExistsConverter"/>
+
+        <!-- Folder Item Template -->
+        <DataTemplate x:Key="FolderItemTemplate">
+            <Grid Margin="4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Folder Path -->
+                <TextBlock Grid.Column="0" Text="{Binding}" VerticalAlignment="Center" 
+                           Foreground="White" TextTrimming="CharacterEllipsis"
+                           ToolTip="{Binding}"/>
+
+                <!-- Exists Indicator -->
+                <TextBlock Grid.Column="1" x:Name="ExistsIndicator" VerticalAlignment="Center" 
+                           Margin="10,0" FontSize="11"/>
+
+                <!-- Remove Button -->
+                <Button Grid.Column="2" Content="X" Width="24" Height="24"
+                        Background="Transparent" Foreground="#888888" 
+                        BorderThickness="0" Cursor="Hand"
+                        ToolTip="Remove folder"
+                        Tag="{Binding}"
+                        Click="RemoveFolder_Click">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}" CornerRadius="12">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#D32F2F"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </Grid>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Converter={StaticResource FolderExistsConverter}}" Value="True">
+                    <Setter TargetName="ExistsIndicator" Property="Text" Value="[exists]"/>
+                    <Setter TargetName="ExistsIndicator" Property="Foreground" Value="#22c55e"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Converter={StaticResource FolderExistsConverter}}" Value="False">
+                    <Setter TargetName="ExistsIndicator" Property="Text" Value="[not found]"/>
+                    <Setter TargetName="ExistsIndicator" Property="Foreground" Value="#71717a"/>
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- ListBox Style -->
+        <Style x:Key="FolderListBoxStyle" TargetType="ListBox">
+            <Setter Property="Background" Value="#1e1e1e"/>
+            <Setter Property="BorderBrush" Value="#3f3f46"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="4"/>
+        </Style>
+
+        <!-- ListBox Item Style -->
+        <Style x:Key="FolderListBoxItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Margin" Value="0,2"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" 
+                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#27272a"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#0078D4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Action Button Style -->
+        <Style x:Key="ActionButton" TargetType="Button">
+            <Setter Property="Background" Value="#0078D4"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" 
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#1a86dc"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#006cbd"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="#3f3f46"/>
+                                <Setter Property="Foreground" Value="#71717a"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Secondary Button Style -->
+        <Style x:Key="SecondaryButton" TargetType="Button">
+            <Setter Property="Background" Value="#27272a"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" 
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#3f3f46"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#52525b"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <TextBlock Grid.Row="0" Text="Watched Folders" FontSize="16" FontWeight="Bold" 
+                   Foreground="White" Margin="0,0,0,8"/>
+
+        <!-- Description -->
+        <TextBlock Grid.Row="1" TextWrapping="Wrap" Foreground="#a1a1aa" FontSize="12" Margin="0,0,0,12">
+            These folders are monitored for achievement data from emulators and cracks (Goldberg, CODEX, etc.).
+            Add folders where your games store achievement files.
+        </TextBlock>
+
+        <!-- Folders List -->
+        <ListBox x:Name="FoldersListBox" Grid.Row="2" 
+                 Style="{StaticResource FolderListBoxStyle}"
+                 ItemContainerStyle="{StaticResource FolderListBoxItemStyle}"
+                 ItemTemplate="{StaticResource FolderItemTemplate}"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+
+        <!-- Buttons -->
+        <Grid Grid.Row="3" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="0" Content="Add Folder" Style="{StaticResource ActionButton}"
+                    Click="AddFolder_Click" Margin="0,0,8,0"/>
+
+            <Button Grid.Column="1" Content="Reset to Defaults" Style="{StaticResource SecondaryButton}"
+                    Click="ResetToDefaults_Click"/>
+
+            <StackPanel Grid.Column="3" Orientation="Horizontal">
+                <TextBlock x:Name="FolderCountText" Text="0 folders" Foreground="#71717a" 
+                           VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <TextBlock x:Name="ExistingCountText" Text="(0 exist)" Foreground="#22c55e" 
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -13,7 +13,7 @@ namespace RevoltUltimate.API.Accounts
 
         static AccountManager()
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(AccountsFilePath));
+            Directory.CreateDirectory(path: Path.GetDirectoryName(AccountsFilePath));
         }
 
         public static void SaveSteamAccount(string username, List<SerializableCookie> cookies)

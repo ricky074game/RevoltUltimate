@@ -4,41 +4,258 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="About RevoltUltimate" Height="450" Width="800"
+        Title="About RevoltUltimate" Height="580" Width="450"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
-        WindowStartupLocation="CenterScreen">
-    <Grid>
-        <Border Background="#18181b" CornerRadius="10">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
 
-                <!-- Title Bar -->
-                <Border Grid.Row="0" Background="#27272a" CornerRadius="10,10,0,0" MouseDown="TitleBar_MouseDown">
-                    <Grid Height="40">
-                        <TextBlock Text="About RevoltUltimate" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="15,0,0,0" Foreground="White" FontSize="14"/>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <TextBlock Text="&#xE949;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="10" Foreground="White" MouseDown="Minimize_Click"/>
-                            <TextBlock Text="&#xE8BB;" FontFamily="Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" Margin="10" Foreground="White" MouseDown="Close_Click"/>
-                        </StackPanel>
-                    </Grid>
-                </Border>
+    <Window.Resources>
+        <!-- Primary Button Style -->
+        <Style x:Key="PrimaryButton" TargetType="Button">
+            <Setter Property="Background" Value="#0078D4"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="20,10"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" 
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#1a86dc"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#006cbd"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="#27272a"/>
+                                <Setter Property="Foreground" Value="#22c55e"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-                <!-- Content -->
-                <Grid Grid.Row="1" Margin="20">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <StackPanel Grid.Row="0" Margin="20" HorizontalAlignment="Center">
-                        <TextBlock Text="RevoltUltimate" FontSize="24" FontWeight="Bold" TextAlignment="Center"/>
-                        <TextBlock Text="Version: 1.0.0" FontSize="16" TextAlignment="Center" Margin="0,10,0,0"/>
-                        <Button Content="{Binding UpdateButtonContent}" Style="{StaticResource SetupButtonStyle}" Command="{Binding UpdateCommand}" Margin="10,0,0,0"/>
+        <!-- Link Button Style -->
+        <Style x:Key="LinkButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#71717a"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="#0078D4"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Window Control Button Style -->
+        <Style x:Key="WindowControlButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#71717a"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#3f3f46"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Close Button Style -->
+        <Style x:Key="CloseButton" TargetType="Button" BasedOn="{StaticResource WindowControlButton}">
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#dc2626"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Contributor Card Style -->
+        <Style x:Key="ContributorCard" TargetType="Border">
+            <Setter Property="Background" Value="#27272a"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#3f3f46"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <!-- Main Container -->
+    <Border CornerRadius="12" Background="#18181b">
+        <Border.Effect>
+            <DropShadowEffect ShadowDepth="0" BlurRadius="20" Opacity="0.5" Color="Black"/>
+        </Border.Effect>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Title Bar -->
+            <Border Grid.Row="0" Background="#0f0f10" CornerRadius="12,12,0,0" MouseDown="TitleBar_MouseDown">
+                <Grid Height="44">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                        <Border Width="8" Height="8" CornerRadius="4" Background="#0078D4" Margin="0,0,10,0"/>
+                        <TextBlock Text="About" Foreground="White" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,8,0">
+                        <Button Style="{StaticResource WindowControlButton}" Content="&#x2014;" Click="Minimize_Click"/>
+                        <Button Style="{StaticResource CloseButton}" Content="X" Click="Close_Click"/>
                     </StackPanel>
                 </Grid>
-            </Grid>
-        </Border>
-    </Grid>
+            </Border>
+
+            <!-- Content -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="32,24,32,32">
+
+                    <!-- Logo -->
+                    <Border Width="80" Height="80" CornerRadius="16" Background="#27272a" 
+                            HorizontalAlignment="Center" Margin="0,0,0,20">
+                        <Border.Effect>
+                            <DropShadowEffect ShadowDepth="0" BlurRadius="20" Opacity="0.3" Color="#0078D4"/>
+                        </Border.Effect>
+                        <Image Source="/Images/RoninLogo.ico" Width="60" Height="60" 
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                    </Border>
+
+                    <!-- App Name -->
+                    <TextBlock Text="RevoltUltimate" FontSize="28" FontWeight="Bold" Foreground="White"
+                               HorizontalAlignment="Center" Margin="0,0,0,4"/>
+
+                    <!-- Version Info -->
+                    <Border Background="#27272a" CornerRadius="8" Padding="16" Margin="0,0,0,20">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Version" Foreground="#71717a" FontSize="12"/>
+                            <TextBlock Grid.Row="0" Grid.Column="1" x:Name="VersionText" Text="0.0.3" 
+                                       Foreground="White" FontWeight="SemiBold" FontSize="12"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Status" Foreground="#71717a" 
+                                       FontSize="12" Margin="0,8,0,0"/>
+                            <TextBlock Grid.Row="1" Grid.Column="1" x:Name="StatusText" Text="Checking..." 
+                                       Foreground="#f59e0b" FontSize="12" Margin="0,8,0,0"/>
+
+                        </Grid>
+                    </Border>
+
+                    <!-- Update Button -->
+                    <Button x:Name="UpdateButton" Content="{Binding UpdateButtonContent}" 
+                            Style="{StaticResource PrimaryButton}" 
+                            Command="{Binding UpdateCommand}"
+                            HorizontalAlignment="Stretch" Margin="0,0,0,24"/>
+
+                    <!-- Separator -->
+                    <Border Height="1" Background="#27272a" Margin="0,0,0,20"/>
+
+                    <!-- Contributors Section -->
+                    <TextBlock Text="CONTRIBUTORS" FontSize="11" FontWeight="SemiBold" Foreground="#52525b" 
+                               Margin="0,0,0,12"/>
+
+                    <!-- Contributors List -->
+                    <ItemsControl x:Name="ContributorsPanel">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel HorizontalAlignment="Center"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource ContributorCard}" Margin="4" 
+                                        MouseLeftButtonUp="Contributor_Click" Tag="{Binding GitHubUrl}"
+                                        ToolTip="{Binding Role}">
+                                    <StackPanel Width="80">
+                                        <!-- Profile Picture -->
+                                        <Border Width="48" Height="48" CornerRadius="24" 
+                                                HorizontalAlignment="Center" Margin="0,0,0,8"
+                                                BorderBrush="#3f3f46" BorderThickness="2">
+                                            <Border.Background>
+                                                <ImageBrush ImageSource="{Binding AvatarUrl}" Stretch="UniformToFill"/>
+                                            </Border.Background>
+                                            <Border.Clip>
+                                                <EllipseGeometry Center="24,24" RadiusX="24" RadiusY="24"/>
+                                            </Border.Clip>
+                                        </Border>
+                                        <!-- Username -->
+                                        <TextBlock Text="{Binding Username}" Foreground="White" FontSize="11"
+                                                   HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                                   FontWeight="Medium"/>
+                                        <!-- Role Badge -->
+                                        <Border Background="{Binding RoleColor}" CornerRadius="4" 
+                                                Padding="6,2" HorizontalAlignment="Center" Margin="0,4,0,0">
+                                            <TextBlock Text="{Binding RoleShort}" Foreground="White" FontSize="9"/>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Separator -->
+                    <Border Height="1" Background="#27272a" Margin="0,20,0,20"/>
+
+                    <!-- Links -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button Style="{StaticResource LinkButton}" Content="GitHub" Click="GitHub_Click"/>
+                        <TextBlock Text="|" Foreground="#3f3f46" VerticalAlignment="Center" Margin="8,0"/>
+                        <Button Style="{StaticResource LinkButton}" Content="Report Issue" Click="ReportIssue_Click"/>
+                        <TextBlock Text="|" Foreground="#3f3f46" VerticalAlignment="Center" Margin="8,0"/>
+                        <Button Style="{StaticResource LinkButton}" Content="Contribute" Click="Contribute_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Border>
 </Window>
