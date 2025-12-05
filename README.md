@@ -51,5 +51,7 @@ Contributions are always welcome! Feel free to make a pull request.
 
 See `contributing.md` for ways to get started.
 
+## Star History
 
+[![Star History Chart](https://api.star-history.com/svg?repos=ricky074game/RevoltUltimate&type=date&legend=top-left)](https://www.star-history.com/#ricky074game/RevoltUltimate&type=date&legend=top-left)
 
