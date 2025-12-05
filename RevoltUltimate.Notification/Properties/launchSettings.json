@@ -1,1 +1,7 @@
-{}
+{
+  "profiles": {
+    "RevoltUltimate.Notification": {
+      "commandName": "Project"
+    }
+  }
+}

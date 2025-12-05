@@ -33,7 +33,6 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\RevoltUltimate.API\RevoltUltimate.API.csproj" />
-		<!-- Add reference to Notification project - this will copy DLL to output -->
 		<ProjectReference Include="..\RevoltUltimate.Notification\RevoltUltimate.Notification.csproj">
 			<Private>true</Private>
 		</ProjectReference>
@@ -66,36 +65,80 @@
 		</Resource>
 	</ItemGroup>
 
-	<!-- Target to build Comet -->
-	<Target Name="BuildComet" BeforeTargets="BeforeBuild">
-		<PropertyGroup>
-			<CometProjectPath>..\cometOffline</CometProjectPath>
-		</PropertyGroup>
-		<Exec Command="cargo build --release" WorkingDirectory="$(CometProjectPath)" Condition="Exists('$(CometProjectPath)')" />
-		<ItemGroup>
-			<CometExe Include="$(CometProjectPath)\target\release\comet.exe" />
-			<CometCert Include="$(CometProjectPath)\target\release\cert.pem" />
-			<CometKey Include="$(CometProjectPath)\target\release\key.pem" />
-		</ItemGroup>
-		<Copy SourceFiles="@(CometExe)" DestinationFolder="$(TargetDir)comet" SkipUnchangedFiles="true" />
-		<Message Text="Comet executable built and copied successfully." Importance="high" />
+	<ItemGroup>
+		<Content Include="comet\cert.pem">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</Content>
+		<Content Include="comet\key.pem">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</Content>
+	</ItemGroup>
+
+	<PropertyGroup>
+		<CometProjectPath>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\cometOffline'))</CometProjectPath>
+		<CometExePath>$(CometProjectPath)\target\release\comet.exe</CometExePath>
+	</PropertyGroup>
+
+	<Target Name="BuildComet" BeforeTargets="Build" Condition="Exists('$(CometProjectPath)')">
+		<Message Text="Building Comet from: $(CometProjectPath)" Importance="high" />
+		<Exec Command="cargo build --release" WorkingDirectory="$(CometProjectPath)" />
+		<Message Text="Comet build completed." Importance="high" />
 	</Target>
 
-	<!-- Targets to copy NotificationsDll to Toasts folder after build -->
+	<Target Name="CopyCometAfterBuild" AfterTargets="Build" Condition="Exists('$(CometExePath)')">
+		<MakeDir Directories="$(TargetDir)comet" />
+		<Copy SourceFiles="$(CometExePath)" DestinationFolder="$(TargetDir)comet" SkipUnchangedFiles="true" />
+		<Message Text="Comet.exe copied to $(TargetDir)comet" Importance="high" />
+	</Target>
+
+	<Target Name="CopyCometOnPublish" AfterTargets="Publish">
+		<Message Text="Copying Comet files to publish directory: $(PublishDir)" Importance="high" />
+		<MakeDir Directories="$(PublishDir)comet" />
+
+		<Copy SourceFiles="$(CometExePath)"
+		      DestinationFolder="$(PublishDir)comet"
+		      SkipUnchangedFiles="true"
+		      Condition="Exists('$(CometExePath)')" />
+
+		<Copy SourceFiles="$(MSBuildProjectDirectory)\comet\cert.pem"
+		      DestinationFolder="$(PublishDir)comet"
+		      SkipUnchangedFiles="true"
+		      Condition="Exists('$(MSBuildProjectDirectory)\comet\cert.pem')" />
+		<Copy SourceFiles="$(MSBuildProjectDirectory)\comet\key.pem"
+		      DestinationFolder="$(PublishDir)comet"
+		      SkipUnchangedFiles="true"
+		      Condition="Exists('$(MSBuildProjectDirectory)\comet\key.pem')" />
+
+		<Message Text="Comet files copied to publish folder." Importance="high" />
+		<Warning Text="comet.exe not found at $(CometExePath). Run 'cargo build --release' in cometOffline folder first."
+		         Condition="!Exists('$(CometExePath)')" />
+	</Target>
+
 	<Target Name="CopyNotificationToToasts" AfterTargets="Build" DependsOnTargets="ResolveProjectReferences">
 		<PropertyGroup>
 			<NotificationDllSource>$(TargetDir)RevoltUltimate.Notification.dll</NotificationDllSource>
 		</PropertyGroup>
 		<MakeDir Directories="$(TargetDir)Toasts" />
-		<Copy SourceFiles="$(NotificationDllSource)" DestinationFolder="$(TargetDir)Toasts" SkipUnchangedFiles="true" Condition="Exists('$(NotificationDllSource)')" />
-		<Message Text="RevoltUltimate.Notification.dll copied to Toasts folder." Importance="high" Condition="Exists('$(NotificationDllSource)')" />
+		<Copy SourceFiles="$(NotificationDllSource)"
+		      DestinationFolder="$(TargetDir)Toasts"
+		      SkipUnchangedFiles="true"
+		      Condition="Exists('$(NotificationDllSource)')" />
+		<Message Text="RevoltUltimate.Notification.dll copied to Toasts folder."
+		         Importance="high"
+		         Condition="Exists('$(NotificationDllSource)')" />
 	</Target>
+
 	<Target Name="CopyNotificationToToastsOnPublish" AfterTargets="Publish">
 		<PropertyGroup>
 			<NotificationDllSourcePublish>$(PublishDir)RevoltUltimate.Notification.dll</NotificationDllSourcePublish>
 		</PropertyGroup>
 		<MakeDir Directories="$(PublishDir)Toasts" />
-		<Copy SourceFiles="$(NotificationDllSourcePublish)" DestinationFolder="$(PublishDir)Toasts" SkipUnchangedFiles="true" Condition="Exists('$(NotificationDllSourcePublish)')" />
+		<Copy SourceFiles="$(NotificationDllSourcePublish)"
+		      DestinationFolder="$(PublishDir)Toasts"
+		      SkipUnchangedFiles="true"
+		      Condition="Exists('$(NotificationDllSourcePublish)')" />
 		<Message Text="RevoltUltimate.Notification.dll copied to Toasts folder (publish)." Importance="high" />
 	</Target>
 
