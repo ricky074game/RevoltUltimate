@@ -7,8 +7,7 @@ namespace RevoltUltimate.Desktop
     public class ApplicationSettings
     {
         public string Version { get; set; } = "0.1";
-
-        public string? CustomAnimationDllPath { get; set; }
+        public string? CustomAnimationDllPath { get; set; } = "Toasts/RevoltUltimate.Notification.dll";
 
         [JsonIgnore]
         private byte[]? EncryptedSteamApiKey { get; set; }

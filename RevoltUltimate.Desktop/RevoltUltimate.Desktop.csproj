@@ -28,12 +28,15 @@
 		<PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
 		<PackageReference Include="Serilog.Sinks.Debug" Version="3.0.0" />
 		<PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
-		<PackageReference Include="SharpVectors" Version="1.8.5" />
 		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\RevoltUltimate.API\RevoltUltimate.API.csproj" />
+		<!-- Add reference to Notification project - this will copy DLL to output -->
+		<ProjectReference Include="..\RevoltUltimate.Notification\RevoltUltimate.Notification.csproj">
+			<Private>true</Private>
+		</ProjectReference>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -62,6 +65,7 @@
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Resource>
 	</ItemGroup>
+
 	<!-- Target to build Comet -->
 	<Target Name="BuildComet" BeforeTargets="BeforeBuild">
 		<PropertyGroup>
@@ -74,8 +78,25 @@
 			<CometKey Include="$(CometProjectPath)\target\release\key.pem" />
 		</ItemGroup>
 		<Copy SourceFiles="@(CometExe)" DestinationFolder="$(TargetDir)comet" SkipUnchangedFiles="true" />
-
-
 		<Message Text="Comet executable built and copied successfully." Importance="high" />
 	</Target>
+
+	<!-- Targets to copy NotificationsDll to Toasts folder after build -->
+	<Target Name="CopyNotificationToToasts" AfterTargets="Build" DependsOnTargets="ResolveProjectReferences">
+		<PropertyGroup>
+			<NotificationDllSource>$(TargetDir)RevoltUltimate.Notification.dll</NotificationDllSource>
+		</PropertyGroup>
+		<MakeDir Directories="$(TargetDir)Toasts" />
+		<Copy SourceFiles="$(NotificationDllSource)" DestinationFolder="$(TargetDir)Toasts" SkipUnchangedFiles="true" Condition="Exists('$(NotificationDllSource)')" />
+		<Message Text="RevoltUltimate.Notification.dll copied to Toasts folder." Importance="high" Condition="Exists('$(NotificationDllSource)')" />
+	</Target>
+	<Target Name="CopyNotificationToToastsOnPublish" AfterTargets="Publish">
+		<PropertyGroup>
+			<NotificationDllSourcePublish>$(PublishDir)RevoltUltimate.Notification.dll</NotificationDllSourcePublish>
+		</PropertyGroup>
+		<MakeDir Directories="$(PublishDir)Toasts" />
+		<Copy SourceFiles="$(NotificationDllSourcePublish)" DestinationFolder="$(PublishDir)Toasts" SkipUnchangedFiles="true" Condition="Exists('$(NotificationDllSourcePublish)')" />
+		<Message Text="RevoltUltimate.Notification.dll copied to Toasts folder (publish)." Importance="high" />
+	</Target>
+
 </Project>

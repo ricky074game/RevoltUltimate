@@ -1,5 +1,5 @@
-﻿using System.Diagnostics;
-using RevoltUltimate.API.Update;
+﻿using RevoltUltimate.API.Update;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
