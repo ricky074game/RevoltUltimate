@@ -1,0 +1,73 @@
+name: Build and Publish
+
+on:
+  push:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x 
+
+    - name: Setup Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        target: i686-pc-windows-msvc
+        override: true
+        components: rustfmt, clippy
+
+    - name: Add Rust Targets
+      run: |
+        rustup target add x86_64-pc-windows-msvc
+        rustup target add i686-pc-windows-msvc
+        rustup target add aarch64-pc-windows-msvc
+    - name: Build cometOffline (x64)
+      working-directory: ./cometOffline
+      run: cargo build --release --target x86_64-pc-windows-msvc
+
+    - name: Build cometOffline (x86)
+      working-directory: ./cometOffline
+      run: cargo build --release --target i686-pc-windows-msvc
+
+    - name: Build cometOffline (ARM64)
+      working-directory: ./cometOffline
+      run: cargo build --release --target aarch64-pc-windows-msvc
+    
+    # 1. Windows x64
+    - name: Publish win-x64
+      run: dotnet publish RevoltUltimate.Desktop/RevoltUltimate.Desktop.csproj -c Release -r win-x64 --self-contained true -o ./publish/win-x64
+
+    - name: Zip win-x64
+      run: Compress-Archive -Path ./publish/win-x64/* -DestinationPath ./publish/RevoltUltimate-win-x64.zip
+
+    # 2. Windows x86
+    - name: Publish win-x86
+      run: dotnet publish RevoltUltimate.Desktop/RevoltUltimate.Desktop.csproj -c Release -r win-x86 --self-contained true -o ./publish/win-x86
+
+    - name: Zip win-x86
+      run: Compress-Archive -Path ./publish/win-x86/* -DestinationPath ./publish/RevoltUltimate-win-x86.zip
+
+    # 3. Windows ARM64
+    - name: Publish win-arm64
+      run: dotnet publish RevoltUltimate.Desktop/RevoltUltimate.Desktop.csproj -c Release -r win-arm64 --self-contained true -o ./publish/win-arm64
+
+    - name: Zip win-arm64
+      run: Compress-Archive -Path ./publish/win-arm64/* -DestinationPath ./publish/RevoltUltimate-win-arm64.zip
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: RevoltUltimate-Builds
+        path: ./publish/*.zip
