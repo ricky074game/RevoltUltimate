@@ -1,0 +1,80 @@
+name: Build
+
+on:
+  push:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    name: Build ${{ matrix.rid }}
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - rid: win-x64
+            rust_target: x86_64-pc-windows-msvc
+          - rid: win-x86
+            rust_target: i686-pc-windows-msvc
+          - rid: win-arm64
+            rust_target: aarch64-pc-windows-msvc
+
+    steps:
+    # 1. Checkout code with submodules
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    # 2. Restore Secret Files
+    - name: Restore API Keys
+      run: |
+        New-Item -ItemType Directory -Force -Path "RevoltUltimate.API/Fetcher"
+        
+        # Restore IGDB Api Key
+        if ("${{ secrets.IGDB_API_KEY }}" -ne "") {
+          Set-Content -Path "RevoltUltimate.API/Fetcher/IGDBApiKey.txt" -Value "${{ secrets.IGDB_API_KEY }}"
+        } else {
+          Write-Warning "IGDB_API_KEY secret is missing or empty."
+        }
+
+        # Restore SteamGridDB Api Key
+        if ("${{ secrets.STEAMGRIDDB_API_KEY }}" -ne "") {
+          Set-Content -Path "RevoltUltimate.API/Fetcher/SteamGridDbApiKey.txt" -Value "${{ secrets.STEAMGRIDDB_API_KEY }}"
+        } else {
+           Write-Warning "STEAMGRIDDB_API_KEY secret is missing or empty."
+        }
+
+    # 3. Setup .NET
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    # 4. Setup Rust and add the specific architecture target
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ matrix.rust_target }}
+
+    # 5. Build cometOffline (Rust) for the specific target
+    - name: Build cometOffline
+      run: |
+        cd cometOffline
+        cargo build --release --target ${{ matrix.rust_target }}
+
+    # 6. Publish .NET Project
+    - name: Publish RevoltUltimate.Desktop
+      run: |
+        dotnet publish RevoltUltimate.Desktop/RevoltUltimate.Desktop.csproj -c Release -r ${{ matrix.rid }} --self-contained -o ./publish/${{ matrix.rid }}
+
+    # 7. Zip the output
+    - name: Zip Release
+      run: |
+        Compress-Archive -Path ./publish/${{ matrix.rid }}/* -DestinationPath ./publish/RevoltUltimate-${{ matrix.rid }}.zip
+
+    # 8. Upload Artifacts
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: RevoltUltimate-${{ matrix.rid }}
+        path: ./publish/RevoltUltimate-${{ matrix.rid }}.zip
