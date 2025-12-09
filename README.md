@@ -1,23 +1,22 @@
+<p align="center">
+  <img src="RevoltUltimate.Desktop/Images/RoninLogo.png" alt="Revolt Ultimate Logo" width="150" />
+</p>
 
-# Revolt Ultimate
+<h1 align="center">Revolt Ultimate</h1>
 
-Welcome to Revolt Ultimate! This is a modern .NET program to track achievements, and provide you real-time updates with custom notifications of achievements from multiple platforms! It tries to recreate the console feel of unlocking achievements. 
+<p align="center">
+  A modern .NET program to track achievements and provide real-time updates with custom notifications from multiple platforms. Recreating the console feel of unlocking achievements.
+</p>
 
+---
 
 ## Features
 
-✅ Real time achievement tracking for multiple game platforms.
-
-✅ Fully support Steam and GOG pirated games
-
-✅ Fully support external games that had no achievements or don't even have a game platform!
-
-✅ Custom notifications, allowing you to customize how your achievement looks when you get it.
-
-✅ A cute leveling system to impress your friends on how much you didn't touch grass.
-
-
-
+- Real time achievement tracking for multiple game platforms
+- Fully support Steam and GOG pirated games
+- Fully support external games that had no achievements or don't even have a game platform
+- Custom notifications, allowing you to customize how your achievement looks when you get it
+- A cute leveling system to impress your friends on how much you didn't touch grass
 
 ## Platform Supported
 
@@ -32,24 +31,26 @@ Welcome to Revolt Ultimate! This is a modern .NET program to track achievements,
 - [ ] EA
 - [ ] Windows PC Games (Games that are installed from disk)
 - [ ] RetroAchievements
+
 ## Installation
 
-There will be a website later to install this propertly, but for now, go to the releases tab and extract the latest release.
-    
+Visit the official website to download the latest version:
 
+**[https://revoltultimate.puzzlebest.tech](https://revoltultimate.puzzlebest.tech)**
 
+Alternatively, you can download directly from the [Releases](https://github.com/ricky074game/RevoltUltimate/releases) page.
 
 ## Feedback
 
-If you have any feedback, issues with the program, or anything else at all, please create a issue.
-Your feedback and suggestion is always needed to make this program the best!
-
+If you have any feedback, issues with the program, or anything else at all, please create an issue.
+Your feedback and suggestions are always needed to make this program the best!
 
 ## Contributing
 
-Contributions are always welcome! Feel free to make a pull request. 
+Contributions are always welcome! Feel free to make a pull request.
 
-See `contributing.md` for ways to get started.
+See `CONTRIBUTING.md` for ways to get started.
 
+## License
 
-
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
