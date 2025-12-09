@@ -52,5 +52,7 @@ Contributions are always welcome! Feel free to make a pull request.
 See `CONTRIBUTING.md` for ways to get started.
 
 ## License
-
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Star History
+[![Star History Chart](https://api.star-history.com/svg?repos=ricky074game/RevoltUltimate&type=date&legend=top-left)](https://www.star-history.com/#ricky074game/RevoltUltimate&type=date&legend=top-left)
