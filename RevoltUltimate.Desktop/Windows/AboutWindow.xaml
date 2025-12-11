@@ -253,6 +253,8 @@
                         <Button Style="{StaticResource LinkButton}" Content="Report Issue" Click="ReportIssue_Click"/>
                         <TextBlock Text="|" Foreground="#3f3f46" VerticalAlignment="Center" Margin="8,0"/>
                         <Button Style="{StaticResource LinkButton}" Content="Contribute" Click="Contribute_Click"/>
+                        <TextBlock Text="|" Foreground="#3f3f46" VerticalAlignment="Center" Margin="8,0"/>
+                        <Button Style="{StaticResource LinkButton}" Content="Third-Party Licenses" Click="ThirdPartyLicenses_Click"/>
                     </StackPanel>
                 </StackPanel>
             </ScrollViewer>

@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -10,6 +11,7 @@ namespace RevoltUltimate.Desktop.Windows
 {
     public partial class AboutWindow : Window, INotifyPropertyChanged
     {
+        private const string CurrentVersion = "0.0.3";
         private const string GitHubUrl = "https://github.com/ricky074game/RevoltUltimate";
         private const string IssuesUrl = "https://github.com/ricky074game/RevoltUltimate/issues";
         private const string ContributeUrl = "https://github.com/ricky074game/RevoltUltimate/blob/master/CONTRIBUTING.md";
@@ -43,7 +45,7 @@ namespace RevoltUltimate.Desktop.Windows
         {
             InitializeComponent();
             DataContext = this;
-            VersionText.Text = App.CurrentVersion;
+            VersionText.Text = CurrentVersion;
 
             LoadContributors();
             ContributorsPanel.ItemsSource = Contributors;
@@ -62,17 +64,6 @@ namespace RevoltUltimate.Desktop.Windows
                 AvatarUrl = "https://github.com/ricky074game.png",
                 GitHubUrl = "https://github.com/ricky074game"
             });
-
-            // For any contributors pull requesting in the future, add them like this:
-            // Contributors.Add(new Contributor
-            // {
-            //     Username = "contributor",
-            //     Role = "Contributor",
-            //     RoleShort = "Dev",
-            //     RoleColor = new SolidColorBrush(Color.FromRgb(34, 197, 94)),
-            //     AvatarUrl = "https://github.com/contributor.png",
-            //     GitHubUrl = "https://github.com/contributor"
-            // });
         }
 
         private async void CheckForUpdateAsync()
@@ -84,9 +75,9 @@ namespace RevoltUltimate.Desktop.Windows
             try
             {
                 var updateChecker = new UpdateChecker();
-                string latestVersion = await updateChecker.GetLatestVersionAsync(App.CurrentVersion);
+                string latestVersion = await updateChecker.GetLatestVersionAsync(CurrentVersion);
 
-                if (!UpdateChecker.IsNewerVersion(App.CurrentVersion, latestVersion))
+                if (!UpdateChecker.IsNewerVersion(CurrentVersion, latestVersion))
                 {
                     UpdateButtonContent = "Up to Date";
                     UpdateButton.IsEnabled = false;
@@ -148,6 +139,33 @@ namespace RevoltUltimate.Desktop.Windows
         private void Contribute_Click(object sender, RoutedEventArgs e)
         {
             OpenUrl(ContributeUrl);
+        }
+
+        private void ThirdPartyLicenses_Click(object sender, RoutedEventArgs e)
+        {
+            string licensePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "THIRD-PARTY-LICENSES.txt");
+
+            if (File.Exists(licensePath))
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = licensePath,
+                        UseShellExecute = true
+                    });
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Could not open license file: {ex.Message}", "Error",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            else
+            {
+                MessageBox.Show("Third-party licenses file not found.", "File Not Found",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
