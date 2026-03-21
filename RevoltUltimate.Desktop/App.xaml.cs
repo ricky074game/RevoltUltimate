@@ -36,6 +36,23 @@ namespace RevoltUltimate.Desktop
 
         private async void Application_Startup(object sender, StartupEventArgs e)
         {
+            if (e.Args.Length > 0)
+            {
+                // Try routing arguments to an already-started instance
+                if (IpcManager.SendArgsToExistingInstance(e.Args))
+                {
+                    Current.Shutdown();
+                    return;
+                }
+            }
+
+            // Attempt file associations if permitted
+            FileAssociationHelper.EnsureRevoltAssociation();
+
+            // Start listening for newer instances trying to launch
+            IpcManager.StartListening();
+            IpcManager.OnFileReceived += IpcManager_OnFileReceived;
+
             bool startMinimized = false;
             if (e.Args.Contains("--minimized") || (Settings?.StartMinimized == true))
             {
@@ -668,6 +685,44 @@ namespace RevoltUltimate.Desktop
             _gameWatcherService?.StopWatching();
             CometManager?.Stop();
             base.OnExit(e);
+        }
+
+        private void IpcManager_OnFileReceived(string filePath)
+        {
+            Current.Dispatcher.Invoke(() =>
+            {
+                if (MainWindow is MainWindow mw)
+                {
+                    mw.Show();
+                    if (mw.WindowState == WindowState.Minimized) mw.WindowState = WindowState.Normal;
+                    mw.Activate();
+                    mw.Topmost = true;
+                    mw.Topmost = false;
+                }
+
+                var optionsWindow = Current.Windows.OfType<OptionsWindow>().FirstOrDefault();
+                if (optionsWindow == null)
+                {
+                    optionsWindow = new OptionsWindow();
+                    optionsWindow.Owner = MainWindow;
+                    optionsWindow.Show();
+                }
+                else
+                {
+                    optionsWindow.Show();
+                    optionsWindow.Activate();
+                }
+
+                if (optionsWindow.CategoryListBox.Items.Count > 2)
+                {
+                    optionsWindow.CategoryListBox.SelectedIndex = 2;
+
+                    if (optionsWindow.OptionsContentControl.Content is Options.AchievementOptionsPage page)
+                    {
+                        page.PromptInstallExternalTheme(filePath);
+                    }
+                }
+            });
         }
     }
 }

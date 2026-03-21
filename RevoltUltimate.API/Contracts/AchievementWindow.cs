@@ -12,7 +12,6 @@ namespace RevoltUltimate.API.Contracts
 
         public static void ShowNotification(Achievement achievement, string? customNotifierDllPath)
         {
-
             if (string.IsNullOrEmpty(customNotifierDllPath))
             {
                 Trace.WriteLine("Custom achievement notifier DLL path is not configured in settings.");
@@ -23,25 +22,31 @@ namespace RevoltUltimate.API.Contracts
             {
                 IAchievementNotifier notifier;
 
-                if (_cachedNotifier != null && _lastLoadedDllPath == customNotifierDllPath)
+                string absoluteDllPath = Path.IsPathRooted(customNotifierDllPath)
+                    ? customNotifierDllPath
+                    : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, customNotifierDllPath);
+
+                if (_cachedNotifier != null && _lastLoadedDllPath == absoluteDllPath)
                 {
                     notifier = _cachedNotifier;
                 }
                 else
                 {
-                    if (!File.Exists(customNotifierDllPath))
+                    if (!File.Exists(absoluteDllPath))
                     {
+                        Trace.WriteLine($"Could not find Mod Entry DLL at: {absoluteDllPath}");
                         _cachedNotifier = null;
                         _lastLoadedDllPath = null;
                         return;
                     }
 
-                    Assembly notifierAssembly = Assembly.LoadFrom(customNotifierDllPath);
+                    Assembly notifierAssembly = Assembly.LoadFrom(absoluteDllPath);
                     Type? notifierType = notifierAssembly.GetTypes()
-                                                         .FirstOrDefault(t => typeof(IAchievementNotifier).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
+                        .FirstOrDefault(t => typeof(IAchievementNotifier).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
 
                     if (notifierType == null)
                     {
+                        Trace.WriteLine($"The DLL at {absoluteDllPath} does not contain an IAchievementNotifier implementation.");
                         _cachedNotifier = null;
                         _lastLoadedDllPath = null;
                         return;
@@ -49,10 +54,10 @@ namespace RevoltUltimate.API.Contracts
 
                     notifier = (IAchievementNotifier)Activator.CreateInstance(notifierType);
                     _cachedNotifier = notifier;
-                    _lastLoadedDllPath = customNotifierDllPath;
+                    _lastLoadedDllPath = absoluteDllPath;
                 }
-                notifier.ShowAchievement(achievement);
 
+                notifier.ShowAchievement(achievement);
             }
             catch (Exception ex)
             {

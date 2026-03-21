@@ -116,30 +116,26 @@
 		         Condition="!Exists('$(CometExePath)')" />
 	</Target>
 
-	<Target Name="CopyNotificationToToasts" AfterTargets="Build" DependsOnTargets="ResolveProjectReferences">
+	<Target Name="CopyTemplateNotification" AfterTargets="Build;Publish" DependsOnTargets="ResolveProjectReferences">
 		<PropertyGroup>
-			<NotificationDllSource>$(TargetDir)RevoltUltimate.Notification.dll</NotificationDllSource>
+			<DestinationBaseFolder Condition="'$(PublishDir)' != '' and '$(IsPublishing)' == 'true'">$(PublishDir)</DestinationBaseFolder>
+			<DestinationBaseFolder Condition="'$(DestinationBaseFolder)' == ''">$(TargetDir)</DestinationBaseFolder>
+			<NotificationsDir>$(DestinationBaseFolder)Notifications\default-xbox-toast</NotificationsDir>
 		</PropertyGroup>
-		<MakeDir Directories="$(TargetDir)Toasts" />
-		<Copy SourceFiles="$(NotificationDllSource)"
-		      DestinationFolder="$(TargetDir)Toasts"
-		      SkipUnchangedFiles="true"
-		      Condition="Exists('$(NotificationDllSource)')" />
-		<Message Text="RevoltUltimate.Notification.dll copied to Toasts folder."
-		         Importance="high"
-		         Condition="Exists('$(NotificationDllSource)')" />
-	</Target>
 
-	<Target Name="CopyNotificationToToastsOnPublish" AfterTargets="Publish">
-		<PropertyGroup>
-			<NotificationDllSourcePublish>$(PublishDir)RevoltUltimate.Notification.dll</NotificationDllSourcePublish>
-		</PropertyGroup>
-		<MakeDir Directories="$(PublishDir)Toasts" />
-		<Copy SourceFiles="$(NotificationDllSourcePublish)"
-		      DestinationFolder="$(PublishDir)Toasts"
+		<MakeDir Directories="$(NotificationsDir)" />
+		<Copy SourceFiles="$(TargetDir)RevoltUltimate.Notification.dll"
+		      DestinationFolder="$(NotificationsDir)"
 		      SkipUnchangedFiles="true"
-		      Condition="Exists('$(NotificationDllSourcePublish)')" />
-		<Message Text="RevoltUltimate.Notification.dll copied to Toasts folder (publish)." Importance="high" />
+		      Condition="Exists('$(TargetDir)RevoltUltimate.Notification.dll')"/>
+		<Copy SourceFiles="$(MSBuildProjectDirectory)\..\RevoltUltimate.Notification\manifest.json"
+		      DestinationFolder="$(NotificationsDir)"
+		      SkipUnchangedFiles="true"
+		      Condition="Exists('$(MSBuildProjectDirectory)\..\RevoltUltimate.Notification\manifest.json')"/>
+		<Copy SourceFiles="$(MSBuildProjectDirectory)\..\RevoltUltimate.Notification\xbox.png"
+		      DestinationFolder="$(NotificationsDir)"
+		      SkipUnchangedFiles="true"
+		      Condition="Exists('$(MSBuildProjectDirectory)\..\RevoltUltimate.Notification\xbox.png')"/>
 	</Target>
 
 </Project>

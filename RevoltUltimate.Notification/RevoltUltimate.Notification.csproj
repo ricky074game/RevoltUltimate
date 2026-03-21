@@ -19,6 +19,9 @@
 		<Resource Include="xbox.png">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Resource>
+		<None Include="manifest.json">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -35,5 +38,19 @@
 			<LastGenOutput>Resources.Designer.cs</LastGenOutput>
 		</EmbeddedResource>
 	</ItemGroup>
+
+	<Target Name="AutoBuildRevoltPackage" AfterTargets="Build">
+		<PropertyGroup>
+			<RevoltOutputDir>$(MSBuildProjectDirectory)\..\RevoltThemesOutput\</RevoltOutputDir>
+			<RevoltOutputFile>$(RevoltOutputDir)$(AssemblyName).revolt</RevoltOutputFile>
+		</PropertyGroup>
+
+		<MakeDir Directories="$(RevoltOutputDir)" />
+
+		<Message Text="Packaging theme: $(RevoltOutputFile)" Importance="high" />
+		<Delete Files="$(RevoltOutputFile)" Condition="Exists('$(RevoltOutputFile)')" />
+		<ZipDirectory SourceDirectory="$(TargetDir)" DestinationFile="$(RevoltOutputFile)" Overwrite="true" />
+		<Message Text="Successfully packaged theme to: $(RevoltOutputFile)" Importance="high" />
+	</Target>
 
 </Project>

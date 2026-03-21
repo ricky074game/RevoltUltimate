@@ -5,27 +5,176 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:RevoltUltimate.Desktop.Options"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
-    <Grid Margin="10">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <!-- Title -->
-            <RowDefinition Height="*"/>
-            <!-- ListBox -->
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <!-- Action Buttons Panel -->
-        </Grid.RowDefinitions>
+             d:DesignHeight="650" d:DesignWidth="800">
+    <UserControl.Resources>
+        <Style x:Key="CardBorder" TargetType="Border">
+            <Setter Property="Background" Value="#1e1e1e"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+        </Style>
 
-        <TextBlock Text="Select Custom Achievement Animation DLL:" FontWeight="SemiBold" Grid.Row="0" Margin="0,0,0,5"/>
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+        </Style>
 
-        <ListBox x:Name="DllFilesListBox" Grid.Row="1" Margin="0,0,0,5" SelectionChanged="DllFilesListBox_SelectionChanged" Style="{StaticResource ThemedListBoxStyle}"/>
+        <Style x:Key="InfoText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#a1a1aa"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
 
-        <Button x:Name="ReloadButton" Content="Reload List from 'toasts' folder" Grid.Row="2" Margin="0,0,0,10" Click="ReloadButton_Click" HorizontalAlignment="Left" Style="{StaticResource ThemedButtonStyle}"/>
+        <Style x:Key="ActionButton" TargetType="Button">
+            <Setter Property="Background" Value="#0078D4"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#1a86dc"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#006cbd"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-        <StackPanel Orientation="Horizontal" Grid.Row="3" HorizontalAlignment="Right">
-            <Button x:Name="BrowseButton" Content="Browse for other DLL..." Margin="0,0,5,0" Click="BrowseButton_Click" Style="{StaticResource ThemedButtonStyle}"/>
-            <Button x:Name="TestButton" Content="Test Selected DLL" Click="TestButton_Click" Style="{StaticResource ThemedButtonStyle}"/>
+        <Style x:Key="SecondaryButton" TargetType="Button">
+            <Setter Property="Background" Value="#27272a"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#3f3f46"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#52525b"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="10">
+            <TextBlock Text="Achievement Notifications" FontSize="16" FontWeight="Bold" Foreground="White" Margin="0,0,0,16"/>
+            <Border Style="{StaticResource CardBorder}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="Installed Achievements (Toasts)" Style="{StaticResource SectionHeader}"/>
+
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="Install a customized .revolt package to change how achievement popups look." Style="{StaticResource InfoText}" VerticalAlignment="Center"/>
+
+                        <Button x:Name="ReloadButton" Grid.Column="1" Margin="0,0,8,0" Content="Refresh List" Style="{StaticResource SecondaryButton}" Click="ReloadButton_Click" VerticalAlignment="Center"/>
+                        <Button x:Name="InstallButton" Grid.Column="2" Content="Install New Toast (.revolt)" Style="{StaticResource ActionButton}" Click="InstallButton_Click" VerticalAlignment="Center"/>
+                    </Grid>
+                </Grid>
+            </Border>
+            <ItemsControl x:Name="ThemeItemsControl" Margin="0,0,0,12">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="#27272a" CornerRadius="6" Padding="12" Margin="0,0,0,8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Width="48" Height="48" CornerRadius="6" Background="#1e1e1e" Margin="0,0,12,0">
+                                    <Image Source="{Binding PreviewImagePath}" Stretch="UniformToFill">
+                                        <Image.Style>
+                                            <Style TargetType="Image">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding PreviewImagePath}" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding PreviewImagePath}" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Manifest.Name}" Foreground="White" FontWeight="SemiBold" FontSize="14"/>
+                                    <TextBlock Text="{Binding Manifest.Description}" Style="{StaticResource InfoText}" Margin="0,2,0,0" MaxHeight="35" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Style="{StaticResource InfoText}" Margin="0,2,0,0">
+                            <Hyperlink NavigateUri="{Binding Manifest.Author.Url}" RequestNavigate="Hyperlink_RequestNavigate" Foreground="#3b82f6" TextDecorations="None">
+                                <Run Text="{Binding Manifest.Author.Name, StringFormat='Author: {0}'}" />
+                            </Hyperlink>
+                                    </TextBlock>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Grid.Column="2" VerticalAlignment="Center">
+                                    <Button Content="{Binding SelectButtonText}" Background="{Binding SelectButtonBackground}" Foreground="White" BorderThickness="0" Padding="12,6" Cursor="Hand" Margin="0,0,8,0" Click="SelectTheme_Click" Tag="{Binding}">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                    <Button Content="Test" Style="{StaticResource SecondaryButton}" Padding="12,6" Margin="0,0,8,0" Click="TestTheme_Click" Tag="{Binding}"/>
+                                    <Button Content="🗑️" Background="#ef4444" Foreground="White" BorderThickness="0" Padding="10,6" Cursor="Hand" ToolTip="Delete this Theme" Click="DeleteTheme_Click" Tag="{Binding}">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#b91c1c"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <TextBlock x:Name="EmptyStateText" Text="No custom themes currently installed." Foreground="#71717a" FontStyle="Italic" HorizontalAlignment="Center" Margin="0,20,0,0" Visibility="Collapsed"/>
         </StackPanel>
-    </Grid>
+    </ScrollViewer>
 </UserControl>

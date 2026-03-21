@@ -1,0 +1,14 @@
+{
+  "Id": "default-xbox-toast",
+  "Name": "Xbox Style Notification",
+  "Version": "1.0.0",
+  "Author": {
+    "Name": "Ricky",
+    "Url": "https://github.com/ricky074game/RevoltUltimate"
+  },
+  "Description": "The default official Xbox-style achievement popup.",
+  "PreviewImage": "xbox.png",
+  "Entry": "RevoltUltimate.Notification.dll",
+  "Links": [ "https://ricky.puzzlebest.tech" ],
+  "Tags": [ "default", "xbox", "toast" ]
+}
