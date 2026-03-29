@@ -262,11 +262,64 @@ namespace RevoltUltimate.API.Contracts
             var content = await ReadFileWithRetryAsync(filePath);
             if (string.IsNullOrEmpty(content)) return new Dictionary<string, (bool Unlocked, long UnlockTime)>();
 
-            var parsed = JsonConvert.DeserializeObject<Dictionary<string, GseAchievement>>(content);
-            return parsed?.ToDictionary(
-                kvp => kvp.Key,
-                kvp => (kvp.Value.Earned, kvp.Value.EarnedTime)
-            ) ?? new Dictionary<string, (bool Unlocked, long UnlockTime)>();
+            try
+            {
+                // Attempt 1: Modern Key-Value format (e.g., { "ACH_ID": { "earned": true, "earned_time": 123 } })
+                // Important: Verify the content actually starts with an object { and not an array [ 
+                if (content.TrimStart().StartsWith("{"))
+                {
+                    var parsed = JsonConvert.DeserializeObject<Dictionary<string, GseAchievement>>(content);
+                    if (parsed != null && parsed.Count > 0)
+                    {
+                         // Verify that the first item actually has a valid value, otherwise this might have false-parsed
+                         // a random string dictionary as valid when it wasn't.
+                         return parsed.ToDictionary(
+                             kvp => kvp.Key,
+                             kvp => (kvp.Value?.Earned ?? false, kvp.Value?.EarnedTime ?? 0)
+                         );
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"[GameWatcherService] Exception during Attempt 1 parsing {filePath}: {ex.Message}");
+            }
+
+            try
+            {
+                if (content.TrimStart().StartsWith("["))
+                {
+                    var legacyParsed = JsonConvert.DeserializeObject<List<dynamic>>(content);
+                    if (legacyParsed != null)
+                    {
+                        var result = new Dictionary<string, (bool Unlocked, long UnlockTime)>();
+                        foreach (var item in legacyParsed)
+                        {
+                            string apiName = item.apiName != null ? (string)item.apiName : (item.name != null ? (string)item.name : null);
+                            if (string.IsNullOrEmpty(apiName)) continue;
+
+                            bool unlocked = false;
+                            if (item.unlocked != null) unlocked = (bool)item.unlocked;
+                            else if (item.earned != null) unlocked = (bool)item.earned;
+
+                            long unlockTime = 0;
+                            if (item.unlockTime != null)
+                                long.TryParse(item.unlockTime.ToString(), out unlockTime);
+                            else if (item.earned_time != null)
+                                long.TryParse(item.earned_time.ToString(), out unlockTime);
+
+                            result[apiName] = (unlocked, unlockTime);
+                        }
+                        return result;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"[GameWatcherService] Failed to parse {filePath} as legacy array format: {ex.Message}");
+            }
+
+            return new Dictionary<string, (bool Unlocked, long UnlockTime)>();
         }
 
         private async Task<Dictionary<string, (bool Unlocked, long UnlockTime)>> ParseIniAchievements(string filePath)
