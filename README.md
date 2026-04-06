@@ -47,9 +47,12 @@ Your feedback and suggestions are always needed to make this program the best!
 
 ## Contributing
 
-Contributions are always welcome! Feel free to make a pull request.
+There are 3 main ways to contribute:
+1: Contribute to RevoltUltimate directly!
+2: Contribute to RevoltAchievements to update our database on achievements (especially GOG)
+3: Create your own achievements toasts for other people to use!
 
-See `CONTRIBUTING.md` for ways to get started.
+Read here to learn more: https://revoltdocs.puzzlebest.tech/development/development/
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
